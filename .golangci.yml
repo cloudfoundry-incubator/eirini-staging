@@ -1,0 +1,49 @@
+run:
+  # which dirs to skip: they won't be analyzed;
+  skip-dirs:
+    - vendor
+    - recipe/packs
+    - launcher/buildpackapplifecycle
+
+linters-settings:
+  govet:
+    # report about shadowed variables
+    check-shadowing: true
+  gocyclo:
+    # minimal code complexity to report
+    min-complexity: 10
+  maligned:
+    # print struct with more effective memory layout
+    suggest-new: true
+  lll:
+    line-length: 512
+
+linters:
+  enable-all: true
+  disable:
+    - gochecknoglobals
+    - gochecknoinits
+    - typecheck
+    - goconst
+
+issues:
+  exclude-use-default: true
+  exclude-rules:
+    - path: buildpack_manager.go
+      linters:
+      - gosec
+    - path: buildpackmanager_test.go
+      linters:
+      - gosec
+    - path: integration/staging_test.go
+      linters:
+      - gosec
+      - unparam
+  # Maximum issues count per one linter. Set to 0 to disable.
+  max-per-linter: 0
+
+  # Maximum count of issues with the same text. Set to 0 to disable
+  max-same: 0
+
+  # Show only new issues
+  new: false
