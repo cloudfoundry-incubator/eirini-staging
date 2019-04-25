@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"code.cloudfoundry.org/eirinistaging"
-	"code.cloudfoundry.org/eirinistaging/util"
+	"code.cloudfoundry.org/eirini-staging"
+	"code.cloudfoundry.org/eirini-staging/util"
 )
 
 func main() {

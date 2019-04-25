@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "code.cloudfoundry.org/eirinistaging"
+	. "code.cloudfoundry.org/eirini-staging"
 )
 
 var _ = Describe("Unzip function", func() {

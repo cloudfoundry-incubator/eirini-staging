@@ -30,7 +30,7 @@ type BinaryPaths struct {
 
 var _ = SynchronizedBeforeSuite(func() []byte {
 
-	sourcePath = "code.cloudfoundry.org/eirinistaging"
+	sourcePath = "code.cloudfoundry.org/eirini-staging"
 	//sourcePath := filepath.Join(os.Getenv("GOPATH"), "src", sourcePath)
 
 	downloaderPath, err := gexec.Build(filepath.Join(sourcePath, "cmd/downloader"))

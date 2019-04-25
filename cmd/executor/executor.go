@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"os"
 
-	"code.cloudfoundry.org/eirinistaging"
+	"code.cloudfoundry.org/eirini-staging"
 	"github.com/pkg/errors"
 )
 
 func main() {
+	buildpackCfg := os.Getenv(eirinistaging.EnvBuildpacks)
 	stagingGUID := os.Getenv(eirinistaging.EnvStagingGUID)
 	completionCallback := os.Getenv(eirinistaging.EnvCompletionCallback)
 	eiriniAddress := os.Getenv(eirinistaging.EnvEiriniAddress)
@@ -59,10 +60,11 @@ func main() {
 	}
 
 	executor := &eirinistaging.PacksExecutor{
-		Conf:        packsConf,
-		Commander:   commander,
-		Extractor:   &eirinistaging.Unzipper{},
-		DownloadDir: downloadDir,
+		Conf:           packsConf,
+		Commander:      commander,
+		Extractor:      &eirinistaging.Unzipper{},
+		DownloadDir:    downloadDir,
+		BuildpacksJSON: buildpackCfg,
 	}
 
 	err := executor.ExecuteRecipe()

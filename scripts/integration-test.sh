@@ -5,6 +5,6 @@ set -exuo pipefail
 WORKSPACE=$(pwd)
 
 docker build -t eirinistaging/integration-tests:latest -f ./image/integration-tests/Dockerfile .
-docker run --rm \
+docker run -it  \
   -v ${WORKSPACE}:/eirinistaging \
-  eirinistaging/integration-tests ginkgo -r
+  eirinistaging/integration-tests bash

@@ -4,7 +4,7 @@ package eirinistagingfakes
 import (
 	"sync"
 
-	"code.cloudfoundry.org/eirinistaging"
+	"code.cloudfoundry.org/eirini-staging"
 )
 
 type FakeExtractor struct {

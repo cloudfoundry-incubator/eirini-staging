@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	bap "code.cloudfoundry.org/buildpackapplifecycle"
-	. "code.cloudfoundry.org/eirinistaging"
+	. "code.cloudfoundry.org/eirini-staging"
 )
 
 var _ = Describe("BuildpacksKeyModifier", func() {

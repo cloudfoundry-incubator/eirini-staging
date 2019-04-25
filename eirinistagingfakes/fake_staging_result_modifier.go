@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/buildpackapplifecycle"
-	"code.cloudfoundry.org/eirinistaging"
+	"code.cloudfoundry.org/eirini-staging"
 )
 
 type FakeStagingResultModifier struct {

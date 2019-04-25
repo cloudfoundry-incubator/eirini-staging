@@ -10,8 +10,8 @@ import (
 	"github.com/onsi/gomega/ghttp"
 
 	bap "code.cloudfoundry.org/buildpackapplifecycle"
-	. "code.cloudfoundry.org/eirinistaging"
-	"code.cloudfoundry.org/eirinistaging/eirinistagingfakes"
+	. "code.cloudfoundry.org/eirini-staging"
+	"code.cloudfoundry.org/eirini-staging/eirinistagingfakes"
 )
 
 const (
@@ -98,15 +98,15 @@ var _ = Describe("PacksExecutor", func() {
 			)
 		})
 
-		JustBeforeEach(func() {
-			err = executor.ExecuteRecipe()
-		})
-
 		AfterEach(func() {
 			server.Close()
 		})
 
 		Context("when extracting fails", func() {
+			JustBeforeEach(func() {
+				err = executor.ExecuteRecipe()
+			})
+
 			BeforeEach(func() {
 				extractor.ExtractReturns(errors.New("some-error"))
 			})
@@ -117,32 +117,80 @@ var _ = Describe("PacksExecutor", func() {
 			})
 		})
 
-		It("should not return an error", func() {
-			Expect(err).ToNot(HaveOccurred())
+		Context("when buildpack information is not set", func() {
+			JustBeforeEach(func() {
+				err = executor.ExecuteRecipe()
+			})
+
+			It("should not return an error", func() {
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should call the extractor", func() {
+				downloadPath, actualTargetDir := extractor.ExtractArgsForCall(0)
+				Expect(extractor.ExtractCallCount()).To(Equal(1))
+				Expect(downloadPath).To(ContainSubstring(downloadDir))
+				Expect(actualTargetDir).NotTo(BeEmpty())
+			})
+
+			It("should run the packs builder", func() {
+				Expect(commander.ExecCallCount()).To(Equal(1))
+				_, actualTargetDir := extractor.ExtractArgsForCall(0)
+
+				cmd, args := commander.ExecArgsForCall(0)
+				Expect(cmd).To(Equal("/packs/builder"))
+				Expect(args).To(ConsistOf(
+					"-buildDir", actualTargetDir,
+					"-buildpacksDir", "/var/lib/buildpacks",
+					"-outputDroplet", "/out/droplet.tgz",
+					"-outputBuildArtifactsCache", "/cache/cache.tgz",
+					"-outputMetadata", tmpfile.Name(),
+				))
+			})
 		})
 
-		It("should call the extractor", func() {
-			downloadPath, actualTargetDir := extractor.ExtractArgsForCall(0)
-			Expect(extractor.ExtractCallCount()).To(Equal(1))
-			Expect(downloadPath).To(ContainSubstring(downloadDir))
-			Expect(actualTargetDir).NotTo(BeEmpty())
+		Context("when single buildpack information is provided", func() {
+			JustBeforeEach(func() {
+				typedExecutor := executor.(*PacksExecutor)
+				typedExecutor.BuildpacksJSON = `
+					[
+						{
+							"name":"binary_buildpack",
+							"key":"binary_buildpack_key",
+							"url":"https://example.com/binary_buildpack",
+							"skip_detect": true
+						}
+					]`
+				err = typedExecutor.ExecuteRecipe()
+			})
+
+			It("should not return an error", func() {
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should call the extractor", func() {
+				downloadPath, actualTargetDir := extractor.ExtractArgsForCall(0)
+				Expect(extractor.ExtractCallCount()).To(Equal(1))
+				Expect(downloadPath).To(ContainSubstring(downloadDir))
+				Expect(actualTargetDir).NotTo(BeEmpty())
+			})
+
+			It("should run the packs builder", func() {
+				Expect(commander.ExecCallCount()).To(Equal(1))
+				_, actualTargetDir := extractor.ExtractArgsForCall(0)
+
+				cmd, args := commander.ExecArgsForCall(0)
+				Expect(cmd).To(Equal("/packs/builder"))
+				Expect(args).To(ConsistOf(
+					"-buildDir", actualTargetDir,
+					"-buildpacksDir", "/var/lib/buildpacks",
+					"-outputDroplet", "/out/droplet.tgz",
+					"-outputBuildArtifactsCache", "/cache/cache.tgz",
+					"-outputMetadata", tmpfile.Name(),
+					"-skipDetect",
+					"-buildpackOrder", "binary_buildpack",
+				))
+			})
 		})
-
-		It("should run the packs builder", func() {
-			Expect(commander.ExecCallCount()).To(Equal(1))
-			_, actualTargetDir := extractor.ExtractArgsForCall(0)
-
-			cmd, args := commander.ExecArgsForCall(0)
-			Expect(cmd).To(Equal("/packs/builder"))
-			Expect(args).To(ConsistOf(
-				"-buildDir", actualTargetDir,
-				"-buildpacksDir", "/var/lib/buildpacks",
-				"-outputDroplet", "/out/droplet.tgz",
-				"-outputBuildArtifactsCache", "/cache/cache.tgz",
-				"-outputMetadata", tmpfile.Name(),
-			))
-		})
-
 	})
-
 })

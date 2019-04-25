@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"code.cloudfoundry.org/bbs/models"
-	. "code.cloudfoundry.org/eirinistaging"
+	. "code.cloudfoundry.org/eirini-staging"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

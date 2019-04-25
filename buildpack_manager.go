@@ -8,15 +8,22 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
 )
 
 type Buildpack struct {
-	Name string `json:"name"`
-	Key  string `json:"key"`
-	URL  string `json:"url"`
+	Name       string `json:"name"`
+	Key        string `json:"key"`
+	URL        string `json:"url"`
+	SkipDetect *bool  `json:"skip_detect";omit_empty`
+}
+
+type StringifiedBuildpack struct {
+	Buildpack
+	SkipDetectString string `json:"skip_detect";omit_empty`
 }
 
 type BuildpackManager struct {
@@ -117,7 +124,22 @@ func (b *BuildpackManager) install(buildpack Buildpack) (err error) {
 }
 
 func (b *BuildpackManager) writeBuildpackJSON(buildpacks []Buildpack) error {
-	bytes, err := json.Marshal(buildpacks)
+	var stringifiedPacks []StringifiedBuildpack
+	for _, b := range buildpacks {
+		detect := false
+		if b.SkipDetect != nil {
+			detect = *b.SkipDetect
+		}
+
+		pack := StringifiedBuildpack{
+			Buildpack:        b,
+			SkipDetectString: strconv.FormatBool(detect),
+		}
+		pack.SkipDetect = nil
+		stringifiedPacks = append(stringifiedPacks, pack)
+	}
+
+	bytes, err := json.Marshal(stringifiedPacks)
 	if err != nil {
 		return err
 	}

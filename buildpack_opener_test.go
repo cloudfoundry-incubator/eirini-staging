@@ -3,7 +3,7 @@ package eirinistaging_test
 import (
 	"net/http"
 
-	"code.cloudfoundry.org/eirinistaging"
+	"code.cloudfoundry.org/eirini-staging"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"

@@ -1,4 +1,4 @@
-module code.cloudfoundry.org/eirinistaging
+module code.cloudfoundry.org/eirini-staging
 
 go 1.12
 

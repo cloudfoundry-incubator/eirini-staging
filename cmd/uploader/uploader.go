@@ -5,12 +5,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"code.cloudfoundry.org/eirinistaging"
-	"code.cloudfoundry.org/eirinistaging/util"
+	"code.cloudfoundry.org/eirini-staging"
+	"code.cloudfoundry.org/eirini-staging/util"
 )
 
 func main() {
-	buildpackCfg := os.Getenv(eirinistaging.EnvBuildpacks)
+	buildpacksConfig := os.Getenv(eirinistaging.EnvBuildpacks)
 	stagingGUID := os.Getenv(eirinistaging.EnvStagingGUID)
 	completionCallback := os.Getenv(eirinistaging.EnvCompletionCallback)
 	eiriniAddress := os.Getenv(eirinistaging.EnvEiriniAddress)
@@ -49,7 +49,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	resp, err := responder.PrepareSuccessResponse(metadataLocation, buildpackCfg)
+	resp, err := responder.PrepareSuccessResponse(metadataLocation, buildpacksConfig)
 	if err != nil {
 		// TODO: log error
 		responder.RespondWithFailure(err)

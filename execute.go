@@ -1,6 +1,7 @@
 package eirinistaging
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -31,10 +32,11 @@ type PacksBuilderConf struct {
 }
 
 type PacksExecutor struct {
-	Conf        PacksBuilderConf
-	Commander   Commander
-	Extractor   Extractor
-	DownloadDir string
+	Conf           PacksBuilderConf
+	Commander      Commander
+	Extractor      Extractor
+	DownloadDir    string
+	BuildpacksJSON string
 }
 
 func (e *PacksExecutor) ExecuteRecipe() error {
@@ -49,6 +51,21 @@ func (e *PacksExecutor) ExecuteRecipe() error {
 		"-outputDroplet", e.Conf.OutputDropletLocation,
 		"-outputBuildArtifactsCache", e.Conf.OutputBuildArtifactsCache,
 		"-outputMetadata", e.Conf.OutputMetadataLocation,
+	}
+
+	if e.BuildpacksJSON != "" {
+		var buildpacks []Buildpack
+		err = json.Unmarshal([]byte(e.BuildpacksJSON), &buildpacks)
+		if err != nil {
+			return err
+		}
+
+		if len(buildpacks) == 1 && buildpacks[0].SkipDetect != nil && *buildpacks[0].SkipDetect {
+			args = append(args, []string{
+				"-skipDetect",
+				"-buildpackOrder", "binary_buildpack",
+			}...)
+		}
 	}
 
 	err = e.Commander.Exec(e.Conf.PacksBuilderPath, args...)

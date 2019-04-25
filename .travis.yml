@@ -6,7 +6,7 @@ go:
 git:
   depth: 1
 
-go_import_path: code.cloudfoundry.org/eirinistaging
+go_import_path: code.cloudfoundry.org/eirini-staging
 
 # Install dependencies responsible for testing/linting
 before_install:
