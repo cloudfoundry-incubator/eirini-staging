@@ -26,7 +26,7 @@ import (
 	"github.com/onsi/gomega/ghttp"
 )
 
-var _ = FDescribe("StagingText", func() {
+var _ = Describe("StagingText", func() {
 
 	const (
 		stagingGUID        = "staging-guid"
