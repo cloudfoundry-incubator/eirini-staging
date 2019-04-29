@@ -63,7 +63,7 @@ func (e *PacksExecutor) ExecuteRecipe() error {
 		if len(buildpacks) == 1 && buildpacks[0].SkipDetect != nil && *buildpacks[0].SkipDetect {
 			args = append(args, []string{
 				"-skipDetect",
-				"-buildpackOrder", "binary_buildpack",
+				"-buildpackOrder", buildpacks[0].Name,
 			}...)
 		}
 	}

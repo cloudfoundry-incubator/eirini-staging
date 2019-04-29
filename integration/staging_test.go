@@ -321,6 +321,71 @@ var _ = Describe("StagingText", func() {
 				})
 			})
 
+			Context("with the loggregator app", func() {
+				BeforeEach(func() {
+					appbitBytes, err = ioutil.ReadFile("testdata/logapp.zip")
+					Expect(err).NotTo(HaveOccurred())
+
+					buildpackBytes, err = ioutil.ReadFile("testdata/ruby-buildpack-cflinuxfs2-v1.7.35.zip")
+					Expect(err).NotTo(HaveOccurred())
+					server.AppendHandlers(
+						ghttp.CombineHandlers(
+							ghttp.VerifyRequest("GET", "/my-buildpack"),
+							ghttp.RespondWith(http.StatusOK, buildpackBytes),
+						),
+						ghttp.CombineHandlers(
+							ghttp.VerifyRequest("GET", "/my-app-bits"),
+							ghttp.RespondWith(http.StatusOK, appbitBytes),
+						),
+					)
+					server.Start()
+
+					err = os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())
+					Expect(err).NotTo(HaveOccurred())
+
+					err = os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))
+					Expect(err).ToNot(HaveOccurred())
+
+					detect := true
+					buildpacks = []eirinistaging.Buildpack{
+						{
+							Name:       "ruby_buildpack",
+							Key:        "ruby_buildpack",
+							URL:        urljoiner.Join(server.URL(), "/my-buildpack"),
+							SkipDetect: &detect,
+						},
+					}
+
+					buildpackJSON, err = json.Marshal(buildpacks)
+					Expect(err).ToNot(HaveOccurred())
+
+					err = os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))
+					Expect(err).ToNot(HaveOccurred())
+
+					err = os.Setenv(eirinistaging.EnvCertsPath, certsPath)
+					Expect(err).ToNot(HaveOccurred())
+
+					cmd := exec.Command(binaries.DownloaderPath)
+					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+					Eventually(session).Should(gexec.Exit())
+					Expect(err).NotTo(HaveOccurred())
+
+				})
+
+				JustBeforeEach(func() {
+					cmd := exec.Command(binaries.ExecutorPath)
+					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+					Eventually(session, 80).Should(gexec.Exit())
+				})
+
+				It("should create the droplet and output metadata", func() {
+					Expect(session.ExitCode()).To(BeZero())
+
+					Expect(path.Join(outputDir, "droplet.tgz")).To(BeARegularFile())
+					Expect(path.Join(outputDir, "result.json")).To(BeARegularFile())
+				})
+			})
+
 			Context("when extract succeeds", func() {
 				BeforeEach(func() {
 					appbitBytes, err = ioutil.ReadFile("testdata/dora.zip")
