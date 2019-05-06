@@ -18,12 +18,14 @@ type Buildpack struct {
 	Name       string `json:"name"`
 	Key        string `json:"key"`
 	URL        string `json:"url"`
-	SkipDetect *bool  `json:"skip_detect";omit_empty`
+	SkipDetect *bool  `json:"skip_detect,omit_empty"`
 }
 
 type StringifiedBuildpack struct {
-	Buildpack
-	SkipDetectString string `json:"skip_detect";omit_empty`
+	Name       string `json:"name"`
+	Key        string `json:"key"`
+	URL        string `json:"url"`
+	SkipDetect string `json:"skip_detect,omit_empty"`
 }
 
 type BuildpackManager struct {
@@ -123,20 +125,48 @@ func (b *BuildpackManager) install(buildpack Buildpack) (err error) {
 	return err
 }
 
-func (b *BuildpackManager) writeBuildpackJSON(buildpacks []Buildpack) error {
-	var stringifiedPacks []StringifiedBuildpack
-	for _, b := range buildpacks {
-		detect := false
-		if b.SkipDetect != nil {
-			detect = *b.SkipDetect
+// StringifyBuildpack converts a buildpack's fields to all strings: the format expected by the buildpackapplifecycle.
+func StringifyBuildpack(buildpack Buildpack) StringifiedBuildpack {
+
+	skipDetect := ""
+	if buildpack.SkipDetect != nil {
+		skipDetect = strconv.FormatBool(*buildpack.SkipDetect)
+	}
+
+	return StringifiedBuildpack{
+		Name:       buildpack.Name,
+		Key:        buildpack.Key,
+		URL:        buildpack.URL,
+		SkipDetect: skipDetect,
+	}
+}
+
+// UnStringifyBuildpack converts a stringifyBuildpack back to its original self.
+func UnStringifyBuildpack(buildpack StringifiedBuildpack) (*Buildpack, error) {
+
+	var skipDetect *bool
+
+	if buildpack.SkipDetect != "" {
+		detect, err := strconv.ParseBool(buildpack.SkipDetect)
+		if err != nil {
+			return nil, err
 		}
 
-		pack := StringifiedBuildpack{
-			Buildpack:        b,
-			SkipDetectString: strconv.FormatBool(detect),
-		}
-		pack.SkipDetect = nil
-		stringifiedPacks = append(stringifiedPacks, pack)
+		skipDetect = &detect
+	}
+
+	return &Buildpack{
+		Name:       buildpack.Name,
+		Key:        buildpack.Key,
+		URL:        buildpack.URL,
+		SkipDetect: skipDetect,
+	}, nil
+}
+
+func (b *BuildpackManager) writeBuildpackJSON(buildpacks []Buildpack) error {
+	stringifiedPacks := make([]StringifiedBuildpack, len(buildpacks))
+	for i, pack := range buildpacks {
+		stringifiedPacks[i] = StringifyBuildpack(pack)
 	}
 
 	bytes, err := json.Marshal(stringifiedPacks)

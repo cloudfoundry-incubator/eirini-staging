@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"code.cloudfoundry.org/eirini-staging"
+	eirinistaging "code.cloudfoundry.org/eirini-staging"
 	"code.cloudfoundry.org/eirini-staging/util"
 )
 

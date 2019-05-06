@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"code.cloudfoundry.org/eirini-staging"
+	eirinistaging "code.cloudfoundry.org/eirini-staging"
 	"github.com/pkg/errors"
 )
 

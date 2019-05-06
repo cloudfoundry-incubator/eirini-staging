@@ -12,7 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
 
-	"code.cloudfoundry.org/eirini-staging"
+	eirinistaging "code.cloudfoundry.org/eirini-staging"
 )
 
 var _ = Describe("Buildpackmanager", func() {
@@ -101,7 +101,12 @@ var _ = Describe("Buildpackmanager", func() {
 
 			var actualBuildpacks []eirinistaging.Buildpack
 			for _, b := range actualStringifiedBuildpacks {
-				actualBuildpacks = append(actualBuildpacks, b.Buildpack)
+
+				var original *eirinistaging.Buildpack
+				original, err = eirinistaging.UnStringifyBuildpack(b)
+				Expect(err).NotTo(HaveOccurred())
+
+				actualBuildpacks = append(actualBuildpacks, *original)
 			}
 
 			Expect(buildpacks).To(ConsistOf(actualBuildpacks))
@@ -145,9 +150,15 @@ var _ = Describe("Buildpackmanager", func() {
 
 			var actualBuildpacks []eirinistaging.Buildpack
 			for _, b := range actualStringifiedBuildpacks {
+
+				var original *eirinistaging.Buildpack
+				original, err = eirinistaging.UnStringifyBuildpack(b)
+				Expect(err).NotTo(HaveOccurred())
+
 				detect := true
-				b.Buildpack.SkipDetect = &detect
-				actualBuildpacks = append(actualBuildpacks, b.Buildpack)
+				original.SkipDetect = &detect
+
+				actualBuildpacks = append(actualBuildpacks, *original)
 			}
 
 			Expect(buildpacks).To(ConsistOf(actualBuildpacks))

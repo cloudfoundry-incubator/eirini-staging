@@ -25,6 +25,7 @@ linters:
     - gochecknoinits
     - typecheck
     - goconst
+    - dupl
 
 issues:
   exclude-use-default: true
