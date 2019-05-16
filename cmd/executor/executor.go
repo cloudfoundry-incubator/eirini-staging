@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"os"
 
 	eirinistaging "code.cloudfoundry.org/eirini-staging"
@@ -9,6 +9,9 @@ import (
 )
 
 func main() {
+	log.Println("executor-started")
+	defer log.Println("executor-done")
+
 	buildpackCfg := os.Getenv(eirinistaging.EnvBuildpacks)
 	stagingGUID := os.Getenv(eirinistaging.EnvStagingGUID)
 	completionCallback := os.Getenv(eirinistaging.EnvCompletionCallback)
@@ -72,6 +75,4 @@ func main() {
 		responder.RespondWithFailure(errors.Wrap(err, "failed to create droplet"))
 		os.Exit(1)
 	}
-
-	fmt.Println("Recipe Execution completed")
 }

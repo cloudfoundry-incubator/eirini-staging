@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -10,6 +11,9 @@ import (
 )
 
 func main() {
+	log.Println("uploader-started")
+	defer log.Println("uploader-done")
+
 	buildpacksConfig := os.Getenv(eirinistaging.EnvBuildpacks)
 	stagingGUID := os.Getenv(eirinistaging.EnvStagingGUID)
 	completionCallback := os.Getenv(eirinistaging.EnvCompletionCallback)
@@ -43,23 +47,22 @@ func main() {
 		Client: client,
 	}
 
+	log.Println("droplet info:", dropletUploadURL, dropletLocation)
 	err = uploadClient.Upload(dropletUploadURL, dropletLocation)
 	if err != nil {
 		responder.RespondWithFailure(err)
-		os.Exit(1)
+		log.Fatalf("failed to upload droplet: %s", err.Error())
 	}
 
 	resp, err := responder.PrepareSuccessResponse(metadataLocation, buildpacksConfig)
 	if err != nil {
-		// TODO: log error
 		responder.RespondWithFailure(err)
-		os.Exit(1)
+		log.Fatalf("failed to prepare response: %s", err.Error())
 	}
 
 	err = responder.RespondWithSuccess(resp)
 	if err != nil {
-		// TODO: log that it didnt go through
-		os.Exit(1)
+		log.Fatalf("failed to prepare response: %s", err.Error())
 	}
 }
 

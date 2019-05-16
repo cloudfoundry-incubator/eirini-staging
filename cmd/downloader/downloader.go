@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -11,6 +11,8 @@ import (
 )
 
 func main() {
+	log.Println("downloader-started")
+	defer log.Println("downloader-done")
 
 	stagingGUID := os.Getenv(eirinistaging.EnvStagingGUID)
 	completionCallback := os.Getenv(eirinistaging.EnvCompletionCallback)
@@ -33,13 +35,13 @@ func main() {
 		workspaceDir = eirinistaging.RecipeWorkspaceDir
 	}
 
+	log.Println("stagingGuid, completionCallback, eiriniAddress", stagingGUID, completionCallback, eiriniAddress)
 	responder := eirinistaging.NewResponder(stagingGUID, completionCallback, eiriniAddress)
 
 	downloadClient, err := createDownloadHTTPClient(certPath)
 	if err != nil {
-		fmt.Println(fmt.Sprintf("error creating http client: %s", err))
 		responder.RespondWithFailure(err)
-		os.Exit(1)
+		log.Fatalf("error creating http client: %s", err.Error())
 	}
 
 	buildpackManager := eirinistaging.NewBuildpackManager(downloadClient, http.DefaultClient, buildpacksDir, buildpacksJSON)
@@ -51,11 +53,9 @@ func main() {
 	} {
 		if err = installer.Install(); err != nil {
 			responder.RespondWithFailure(err)
-			os.Exit(1)
+			log.Fatalf("error installing: %s", err.Error())
 		}
 	}
-
-	fmt.Println("Downloading completed")
 }
 
 func createDownloadHTTPClient(certPath string) (*http.Client, error) {
