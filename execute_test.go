@@ -7,7 +7,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/ghttp"
 
 	bap "code.cloudfoundry.org/buildpackapplifecycle"
 	. "code.cloudfoundry.org/eirini-staging"
@@ -80,27 +79,8 @@ var _ = Describe("PacksExecutor", func() {
 	Context("When executing a recipe", func() {
 
 		var (
-			err    error
-			server *ghttp.Server
+			err error
 		)
-
-		BeforeEach(func() {
-			server = ghttp.NewServer()
-			server.RouteToHandler("PUT", "/stage/staging-guid/completed",
-				ghttp.VerifyJSON(`{
-						"task_guid": "staging-guid",
-						"failed": false,
-						"failure_reason": "",
-						"result": "{\"lifecycle_metadata\":{\"detected_buildpack\":\"\",\"buildpacks\":null},\"process_types\":null,\"execution_metadata\":\"data\",\"lifecycle_type\":\"no-type\"}",
-						"annotation": "{\"lifecycle\":\"\",\"completion_callback\":\"completion-call-me-back\"}",
-						"created_at": 0
-					}`),
-			)
-		})
-
-		AfterEach(func() {
-			server.Close()
-		})
 
 		Context("when extracting fails", func() {
 			JustBeforeEach(func() {
