@@ -567,7 +567,7 @@ var _ = Describe("StagingText", func() {
 
 				Context("when compile fails", func() {
 					BeforeEach(func() {
-						tmpdir, err := ioutil.TempDir(os.TempDir(), "matching-buildpack")
+						tmpdir, err = ioutil.TempDir(os.TempDir(), "matching-buildpack")
 						Expect(err).ToNot(HaveOccurred())
 
 						buildpackPath = path.Join(tmpdir, "buildpack.zip")
@@ -625,7 +625,7 @@ var _ = Describe("StagingText", func() {
 
 				Context("when release fails", func() {
 					BeforeEach(func() {
-						tmpdir, err := ioutil.TempDir(os.TempDir(), "matching-buildpack")
+						tmpdir, err = ioutil.TempDir(os.TempDir(), "matching-buildpack")
 						Expect(err).ToNot(HaveOccurred())
 
 						buildpackPath = path.Join(tmpdir, "buildpack.zip")
