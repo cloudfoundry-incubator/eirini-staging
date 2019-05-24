@@ -72,7 +72,26 @@ func main() {
 
 	err := executor.ExecuteRecipe()
 	if err != nil {
-		responder.RespondWithFailure(errors.Wrap(err, "failed to create droplet"))
-		os.Exit(1)
+		exitReason := "failed to create droplet"
+		exitCode := 1
+		if withExitCode, ok := err.(eirinistaging.ErrorWithExitCode); ok {
+			exitReason = errorMessage(withExitCode.ExitCode)
+			exitCode = withExitCode.ExitCode
+		}
+		responder.RespondWithFailure(errors.Wrap(err, exitReason))
+		os.Exit(exitCode)
+	}
+}
+
+func errorMessage(exitCode int) string {
+	switch exitCode {
+	case eirinistaging.DETECT_FAIL_CODE:
+		return eirinistaging.DetectFailMsg
+	case eirinistaging.COMPILE_FAIL_CODE:
+		return eirinistaging.CompileFailMsg
+	case eirinistaging.RELEASE_FAIL_CODE:
+		return eirinistaging.ReleaseFailMsg
+	default:
+		return eirinistaging.Unknown
 	}
 }

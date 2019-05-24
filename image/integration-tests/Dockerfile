@@ -1,4 +1,4 @@
-FROM packs/cf
+FROM eirinistaging/cf
 
 # Install Golang
 ENV GOLANG_VERSION 1.12

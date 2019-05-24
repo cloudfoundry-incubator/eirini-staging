@@ -3,6 +3,7 @@ module code.cloudfoundry.org/eirini-staging
 go 1.12
 
 require (
+	code.cloudfoundry.org/archiver v0.0.0-20180525162158-e135af3d5a2a
 	code.cloudfoundry.org/bbs v0.0.0-20190329173803-be932b28e023
 	code.cloudfoundry.org/buildpackapplifecycle v0.0.0-20190221201359-5a0eeb8db891
 	code.cloudfoundry.org/cfhttp/v2 v2.0.0 // indirect

@@ -9,18 +9,20 @@ import (
 )
 
 type IOCommander struct {
-	Stdout *os.File
-	Stderr *os.File
-	Stdin  *os.File
+	Stdout   *os.File
+	Stderr   *os.File
+	Stdin    *os.File
+	ExitCode int
 }
 
-func (c *IOCommander) Exec(cmd string, args ...string) error {
+func (c *IOCommander) Exec(cmd string, args ...string) (int, error) {
 	command := exec.Command(cmd, args...) //#nosec
 	command.Stdout = c.Stdout
 	command.Stderr = c.Stderr
 	command.Stdin = c.Stdin
 
-	return command.Run()
+	err := command.Run()
+	return command.ProcessState.ExitCode(), err
 }
 
 type PacksBuilderConf struct {
@@ -68,9 +70,9 @@ func (e *PacksExecutor) ExecuteRecipe() error {
 		}
 	}
 
-	err = e.Commander.Exec(e.Conf.PacksBuilderPath, args...)
+	exitCode, err := e.Commander.Exec(e.Conf.PacksBuilderPath, args...)
 	if err != nil {
-		return err
+		return ErrorWithExitCode{ExitCode: exitCode, InnerError: err}
 	}
 
 	err = os.RemoveAll(buildDir)
