@@ -2,6 +2,26 @@ package eirinistaging
 
 import bap "code.cloudfoundry.org/buildpackapplifecycle"
 
+const (
+	Unknown        = "Unknown reason"
+	DetectFailMsg  = "NoAppDetectedError"
+	CompileFailMsg = "BuildpackCompileFailed"
+	ReleaseFailMsg = "BuildpackReleaseFailed"
+
+	DetectFailCode  = 222
+	CompileFailCode = 223
+	ReleaseFailCode = 224
+)
+
+type ErrorWithExitCode struct {
+	ExitCode   int
+	InnerError error
+}
+
+func (e ErrorWithExitCode) Error() string {
+	return e.InnerError.Error()
+}
+
 type Executor interface {
 	ExecuteRecipe() error
 }
@@ -23,5 +43,5 @@ type Installer interface {
 
 //go:generate counterfeiter . Commander
 type Commander interface {
-	Exec(cmd string, args ...string) error
+	Exec(cmd string, args ...string) (int, error)
 }

@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strconv"
 
+	archive_helpers "code.cloudfoundry.org/archiver/extractor/test_helper"
 	eirinistaging "code.cloudfoundry.org/eirini-staging"
 	"code.cloudfoundry.org/urljoiner"
 
@@ -321,71 +322,6 @@ var _ = Describe("StagingText", func() {
 				})
 			})
 
-			Context("with the loggregator app", func() {
-				BeforeEach(func() {
-					appbitBytes, err = ioutil.ReadFile("testdata/logapp.zip")
-					Expect(err).NotTo(HaveOccurred())
-
-					buildpackBytes, err = ioutil.ReadFile("testdata/ruby-buildpack-cflinuxfs2-v1.7.35.zip")
-					Expect(err).NotTo(HaveOccurred())
-					server.AppendHandlers(
-						ghttp.CombineHandlers(
-							ghttp.VerifyRequest("GET", "/my-buildpack"),
-							ghttp.RespondWith(http.StatusOK, buildpackBytes),
-						),
-						ghttp.CombineHandlers(
-							ghttp.VerifyRequest("GET", "/my-app-bits"),
-							ghttp.RespondWith(http.StatusOK, appbitBytes),
-						),
-					)
-					server.Start()
-
-					err = os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())
-					Expect(err).NotTo(HaveOccurred())
-
-					err = os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))
-					Expect(err).ToNot(HaveOccurred())
-
-					detect := true
-					buildpacks = []eirinistaging.Buildpack{
-						{
-							Name:       "ruby_buildpack",
-							Key:        "ruby_buildpack",
-							URL:        urljoiner.Join(server.URL(), "/my-buildpack"),
-							SkipDetect: &detect,
-						},
-					}
-
-					buildpackJSON, err = json.Marshal(buildpacks)
-					Expect(err).ToNot(HaveOccurred())
-
-					err = os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))
-					Expect(err).ToNot(HaveOccurred())
-
-					err = os.Setenv(eirinistaging.EnvCertsPath, certsPath)
-					Expect(err).ToNot(HaveOccurred())
-
-					cmd := exec.Command(binaries.DownloaderPath)
-					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-					Eventually(session).Should(gexec.Exit())
-					Expect(err).NotTo(HaveOccurred())
-
-				})
-
-				JustBeforeEach(func() {
-					cmd := exec.Command(binaries.ExecutorPath)
-					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-					Eventually(session, 80).Should(gexec.Exit())
-				})
-
-				It("should create the droplet and output metadata", func() {
-					Expect(session.ExitCode()).To(BeZero())
-
-					Expect(path.Join(outputDir, "droplet.tgz")).To(BeARegularFile())
-					Expect(path.Join(outputDir, "result.json")).To(BeARegularFile())
-				})
-			})
-
 			Context("when extract succeeds", func() {
 				BeforeEach(func() {
 					appbitBytes, err = ioutil.ReadFile("testdata/dora.zip")
@@ -469,6 +405,289 @@ var _ = Describe("StagingText", func() {
 						Expect(session.ExitCode).NotTo(BeZero())
 					})
 				})
+			})
+
+			Context("with the loggregator app", func() {
+				BeforeEach(func() {
+					appbitBytes, err = ioutil.ReadFile("testdata/logapp.zip")
+					Expect(err).NotTo(HaveOccurred())
+
+					buildpackBytes, err = ioutil.ReadFile("testdata/ruby-buildpack-cflinuxfs2-v1.7.35.zip")
+					Expect(err).NotTo(HaveOccurred())
+					server.AppendHandlers(
+						ghttp.CombineHandlers(
+							ghttp.VerifyRequest("GET", "/my-buildpack"),
+							ghttp.RespondWith(http.StatusOK, buildpackBytes),
+						),
+						ghttp.CombineHandlers(
+							ghttp.VerifyRequest("GET", "/my-app-bits"),
+							ghttp.RespondWith(http.StatusOK, appbitBytes),
+						),
+					)
+					server.Start()
+
+					err = os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())
+					Expect(err).NotTo(HaveOccurred())
+
+					err = os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))
+					Expect(err).ToNot(HaveOccurred())
+
+					detect := true
+					buildpacks = []eirinistaging.Buildpack{
+						{
+							Name:       "ruby_buildpack",
+							Key:        "ruby_buildpack",
+							URL:        urljoiner.Join(server.URL(), "/my-buildpack"),
+							SkipDetect: &detect,
+						},
+					}
+
+					buildpackJSON, err = json.Marshal(buildpacks)
+					Expect(err).ToNot(HaveOccurred())
+
+					err = os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))
+					Expect(err).ToNot(HaveOccurred())
+
+					err = os.Setenv(eirinistaging.EnvCertsPath, certsPath)
+					Expect(err).ToNot(HaveOccurred())
+
+					cmd := exec.Command(binaries.DownloaderPath)
+					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+					Eventually(session).Should(gexec.Exit())
+					Expect(err).NotTo(HaveOccurred())
+
+				})
+
+				JustBeforeEach(func() {
+					cmd := exec.Command(binaries.ExecutorPath)
+					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+					Eventually(session, 80).Should(gexec.Exit())
+				})
+
+				It("should create the droplet and output metadata", func() {
+					Expect(session.ExitCode()).To(BeZero())
+
+					Expect(path.Join(outputDir, "droplet.tgz")).To(BeARegularFile())
+					Expect(path.Join(outputDir, "result.json")).To(BeARegularFile())
+				})
+			})
+
+			Context("when execute fails", func() {
+				var (
+					buildpackPath string
+					tmpdir        string
+				)
+
+				JustBeforeEach(func() {
+					appbitBytes, err = ioutil.ReadFile("testdata/catnip.zip")
+					Expect(err).NotTo(HaveOccurred())
+
+					buildpackBytes, err = ioutil.ReadFile(buildpackPath)
+					Expect(err).NotTo(HaveOccurred())
+					server.AppendHandlers(
+						ghttp.CombineHandlers(
+							ghttp.VerifyRequest("GET", "/my-buildpack"),
+							ghttp.RespondWith(http.StatusOK, buildpackBytes),
+						),
+						ghttp.CombineHandlers(
+							ghttp.VerifyRequest("GET", "/my-app-bits"),
+							ghttp.RespondWith(http.StatusOK, appbitBytes),
+						),
+					)
+					server.Start()
+
+					err = os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())
+					Expect(err).NotTo(HaveOccurred())
+
+					err = os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))
+					Expect(err).ToNot(HaveOccurred())
+
+				})
+
+				AfterEach(func() {
+					err = os.RemoveAll(tmpdir)
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				Context("when detect fails", func() {
+					BeforeEach(func() {
+						tmpdir, err = ioutil.TempDir(os.TempDir(), "matching-buildpack")
+						Expect(err).ToNot(HaveOccurred())
+
+						buildpackPath = path.Join(tmpdir, "buildpack.zip")
+						archive_helpers.CreateZipArchive(buildpackPath, []archive_helpers.ArchiveFile{
+							{
+								Name: "bin/detect",
+								Body: fmt.Sprintf(`#!/bin/bash
+
+  exit 1
+`),
+							},
+						})
+					})
+
+					JustBeforeEach(func() {
+						buildpacks = []eirinistaging.Buildpack{
+							{
+								Name: "ruby_buildpack",
+								Key:  "ruby_buildpack",
+								URL:  urljoiner.Join(server.URL(), "/my-buildpack"),
+							},
+						}
+
+						buildpackJSON, err = json.Marshal(buildpacks)
+						Expect(err).ToNot(HaveOccurred())
+
+						err = os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))
+						Expect(err).ToNot(HaveOccurred())
+
+						err = os.Setenv(eirinistaging.EnvCertsPath, certsPath)
+						Expect(err).ToNot(HaveOccurred())
+
+						cmd := exec.Command(binaries.DownloaderPath)
+						session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+						Eventually(session).Should(gexec.Exit())
+						Expect(err).NotTo(HaveOccurred())
+					})
+
+					It("should fail with exit code 222", func() {
+						server.AppendHandlers(
+							ghttp.CombineHandlers(
+								ghttp.VerifyRequest("PUT", responseURL),
+								verifyResponse(true, "NoAppDetectedError: exit status 222"),
+							),
+						)
+
+						cmd := exec.Command(binaries.ExecutorPath)
+						session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+						Eventually(session, 80).Should(gexec.Exit())
+						Expect(session.ExitCode()).To(Equal(eirinistaging.DetectFailCode))
+					})
+				})
+
+				Context("when compile fails", func() {
+					BeforeEach(func() {
+						tmpdir, err := ioutil.TempDir(os.TempDir(), "matching-buildpack")
+						Expect(err).ToNot(HaveOccurred())
+
+						buildpackPath = path.Join(tmpdir, "buildpack.zip")
+						archive_helpers.CreateZipArchive(buildpackPath, []archive_helpers.ArchiveFile{
+							{
+								Name: "bin/compile",
+								Body: fmt.Sprintf(`#!/bin/bash
+
+  exit 1
+`),
+							},
+						})
+					})
+
+					JustBeforeEach(func() {
+						skipDetect := true
+						buildpacks = []eirinistaging.Buildpack{
+							{
+								Name:       "ruby_buildpack",
+								Key:        "ruby_buildpack",
+								URL:        urljoiner.Join(server.URL(), "/my-buildpack"),
+								SkipDetect: &skipDetect,
+							},
+						}
+
+						buildpackJSON, err = json.Marshal(buildpacks)
+						Expect(err).ToNot(HaveOccurred())
+
+						err = os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))
+						Expect(err).ToNot(HaveOccurred())
+
+						err = os.Setenv(eirinistaging.EnvCertsPath, certsPath)
+						Expect(err).ToNot(HaveOccurred())
+
+						cmd := exec.Command(binaries.DownloaderPath)
+						session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+						Eventually(session).Should(gexec.Exit())
+						Expect(err).NotTo(HaveOccurred())
+					})
+
+					It("should fail with exit code 223", func() {
+						server.AppendHandlers(
+							ghttp.CombineHandlers(
+								ghttp.VerifyRequest("PUT", responseURL),
+								verifyResponse(true, "BuildpackCompileFailed: exit status 223"),
+							),
+						)
+
+						cmd := exec.Command(binaries.ExecutorPath)
+						session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+						Eventually(session, 80).Should(gexec.Exit())
+						Expect(session.ExitCode()).To(Equal(eirinistaging.CompileFailCode))
+					})
+				})
+
+				Context("when release fails", func() {
+					BeforeEach(func() {
+						tmpdir, err := ioutil.TempDir(os.TempDir(), "matching-buildpack")
+						Expect(err).ToNot(HaveOccurred())
+
+						buildpackPath = path.Join(tmpdir, "buildpack.zip")
+						archive_helpers.CreateZipArchive(buildpackPath, []archive_helpers.ArchiveFile{
+							{
+								Name: "bin/compile",
+								Body: fmt.Sprintf(`#!/bin/bash
+
+  exit 0
+`),
+							},
+							{
+								Name: "bin/release",
+								Body: fmt.Sprintf(`#!/bin/bash
+
+  exit 1
+`),
+							},
+						})
+					})
+
+					JustBeforeEach(func() {
+						skipDetect := true
+						buildpacks = []eirinistaging.Buildpack{
+							{
+								Name:       "ruby_buildpack",
+								Key:        "ruby_buildpack",
+								URL:        urljoiner.Join(server.URL(), "/my-buildpack"),
+								SkipDetect: &skipDetect,
+							},
+						}
+
+						buildpackJSON, err = json.Marshal(buildpacks)
+						Expect(err).ToNot(HaveOccurred())
+
+						err = os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))
+						Expect(err).ToNot(HaveOccurred())
+
+						err = os.Setenv(eirinistaging.EnvCertsPath, certsPath)
+						Expect(err).ToNot(HaveOccurred())
+
+						cmd := exec.Command(binaries.DownloaderPath)
+						session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+						Eventually(session).Should(gexec.Exit())
+						Expect(err).NotTo(HaveOccurred())
+					})
+
+					It("should fail with exit code 224", func() {
+						server.AppendHandlers(
+							ghttp.CombineHandlers(
+								ghttp.VerifyRequest("PUT", responseURL),
+								verifyResponse(true, "BuildpackReleaseFailed: exit status 224"),
+							),
+						)
+
+						cmd := exec.Command(binaries.ExecutorPath)
+						session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+						Eventually(session, 80).Should(gexec.Exit())
+						Expect(session.ExitCode()).To(Equal(eirinistaging.ReleaseFailCode))
+					})
+				})
+
 			})
 		})
 
