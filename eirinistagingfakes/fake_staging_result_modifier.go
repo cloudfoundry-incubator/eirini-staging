@@ -4,44 +4,43 @@ package eirinistagingfakes
 import (
 	"sync"
 
-	"code.cloudfoundry.org/buildpackapplifecycle"
-	"code.cloudfoundry.org/eirini-staging"
+	bap "code.cloudfoundry.org/buildpackapplifecycle"
+	eirinistaging "code.cloudfoundry.org/eirini-staging"
 )
 
 type FakeStagingResultModifier struct {
-	ModifyStub        func(buildpackapplifecycle.StagingResult) (buildpackapplifecycle.StagingResult, error)
+	ModifyStub        func(result bap.StagingResult) (bap.StagingResult, error)
 	modifyMutex       sync.RWMutex
 	modifyArgsForCall []struct {
-		arg1 buildpackapplifecycle.StagingResult
+		result bap.StagingResult
 	}
 	modifyReturns struct {
-		result1 buildpackapplifecycle.StagingResult
+		result1 bap.StagingResult
 		result2 error
 	}
 	modifyReturnsOnCall map[int]struct {
-		result1 buildpackapplifecycle.StagingResult
+		result1 bap.StagingResult
 		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeStagingResultModifier) Modify(arg1 buildpackapplifecycle.StagingResult) (buildpackapplifecycle.StagingResult, error) {
+func (fake *FakeStagingResultModifier) Modify(result bap.StagingResult) (bap.StagingResult, error) {
 	fake.modifyMutex.Lock()
 	ret, specificReturn := fake.modifyReturnsOnCall[len(fake.modifyArgsForCall)]
 	fake.modifyArgsForCall = append(fake.modifyArgsForCall, struct {
-		arg1 buildpackapplifecycle.StagingResult
-	}{arg1})
-	fake.recordInvocation("Modify", []interface{}{arg1})
+		result bap.StagingResult
+	}{result})
+	fake.recordInvocation("Modify", []interface{}{result})
 	fake.modifyMutex.Unlock()
 	if fake.ModifyStub != nil {
-		return fake.ModifyStub(arg1)
+		return fake.ModifyStub(result)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.modifyReturns
-	return fakeReturns.result1, fakeReturns.result2
+	return fake.modifyReturns.result1, fake.modifyReturns.result2
 }
 
 func (fake *FakeStagingResultModifier) ModifyCallCount() int {
@@ -50,41 +49,30 @@ func (fake *FakeStagingResultModifier) ModifyCallCount() int {
 	return len(fake.modifyArgsForCall)
 }
 
-func (fake *FakeStagingResultModifier) ModifyCalls(stub func(buildpackapplifecycle.StagingResult) (buildpackapplifecycle.StagingResult, error)) {
-	fake.modifyMutex.Lock()
-	defer fake.modifyMutex.Unlock()
-	fake.ModifyStub = stub
-}
-
-func (fake *FakeStagingResultModifier) ModifyArgsForCall(i int) buildpackapplifecycle.StagingResult {
+func (fake *FakeStagingResultModifier) ModifyArgsForCall(i int) bap.StagingResult {
 	fake.modifyMutex.RLock()
 	defer fake.modifyMutex.RUnlock()
-	argsForCall := fake.modifyArgsForCall[i]
-	return argsForCall.arg1
+	return fake.modifyArgsForCall[i].result
 }
 
-func (fake *FakeStagingResultModifier) ModifyReturns(result1 buildpackapplifecycle.StagingResult, result2 error) {
-	fake.modifyMutex.Lock()
-	defer fake.modifyMutex.Unlock()
+func (fake *FakeStagingResultModifier) ModifyReturns(result1 bap.StagingResult, result2 error) {
 	fake.ModifyStub = nil
 	fake.modifyReturns = struct {
-		result1 buildpackapplifecycle.StagingResult
+		result1 bap.StagingResult
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeStagingResultModifier) ModifyReturnsOnCall(i int, result1 buildpackapplifecycle.StagingResult, result2 error) {
-	fake.modifyMutex.Lock()
-	defer fake.modifyMutex.Unlock()
+func (fake *FakeStagingResultModifier) ModifyReturnsOnCall(i int, result1 bap.StagingResult, result2 error) {
 	fake.ModifyStub = nil
 	if fake.modifyReturnsOnCall == nil {
 		fake.modifyReturnsOnCall = make(map[int]struct {
-			result1 buildpackapplifecycle.StagingResult
+			result1 bap.StagingResult
 			result2 error
 		})
 	}
 	fake.modifyReturnsOnCall[i] = struct {
-		result1 buildpackapplifecycle.StagingResult
+		result1 bap.StagingResult
 		result2 error
 	}{result1, result2}
 }

@@ -4,15 +4,14 @@ package eirinistagingfakes
 import (
 	"sync"
 
-	"code.cloudfoundry.org/eirini-staging"
+	eirinistaging "code.cloudfoundry.org/eirini-staging"
 )
 
 type FakeInstaller struct {
 	InstallStub        func() error
 	installMutex       sync.RWMutex
-	installArgsForCall []struct {
-	}
-	installReturns struct {
+	installArgsForCall []struct{}
+	installReturns     struct {
 		result1 error
 	}
 	installReturnsOnCall map[int]struct {
@@ -25,8 +24,7 @@ type FakeInstaller struct {
 func (fake *FakeInstaller) Install() error {
 	fake.installMutex.Lock()
 	ret, specificReturn := fake.installReturnsOnCall[len(fake.installArgsForCall)]
-	fake.installArgsForCall = append(fake.installArgsForCall, struct {
-	}{})
+	fake.installArgsForCall = append(fake.installArgsForCall, struct{}{})
 	fake.recordInvocation("Install", []interface{}{})
 	fake.installMutex.Unlock()
 	if fake.InstallStub != nil {
@@ -35,8 +33,7 @@ func (fake *FakeInstaller) Install() error {
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.installReturns
-	return fakeReturns.result1
+	return fake.installReturns.result1
 }
 
 func (fake *FakeInstaller) InstallCallCount() int {
@@ -45,15 +42,7 @@ func (fake *FakeInstaller) InstallCallCount() int {
 	return len(fake.installArgsForCall)
 }
 
-func (fake *FakeInstaller) InstallCalls(stub func() error) {
-	fake.installMutex.Lock()
-	defer fake.installMutex.Unlock()
-	fake.InstallStub = stub
-}
-
 func (fake *FakeInstaller) InstallReturns(result1 error) {
-	fake.installMutex.Lock()
-	defer fake.installMutex.Unlock()
 	fake.InstallStub = nil
 	fake.installReturns = struct {
 		result1 error
@@ -61,8 +50,6 @@ func (fake *FakeInstaller) InstallReturns(result1 error) {
 }
 
 func (fake *FakeInstaller) InstallReturnsOnCall(i int, result1 error) {
-	fake.installMutex.Lock()
-	defer fake.installMutex.Unlock()
 	fake.InstallStub = nil
 	if fake.installReturnsOnCall == nil {
 		fake.installReturnsOnCall = make(map[int]struct {

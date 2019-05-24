@@ -4,43 +4,44 @@ package eirinistagingfakes
 import (
 	"sync"
 
-	"code.cloudfoundry.org/eirini-staging"
+	eirinistaging "code.cloudfoundry.org/eirini-staging"
 )
 
 type FakeCommander struct {
-	ExecStub        func(string, ...string) error
+	ExecStub        func(cmd string, args ...string) (int, error)
 	execMutex       sync.RWMutex
 	execArgsForCall []struct {
-		arg1 string
-		arg2 []string
+		cmd  string
+		args []string
 	}
 	execReturns struct {
-		result1 error
+		result1 int
+		result2 error
 	}
 	execReturnsOnCall map[int]struct {
-		result1 error
+		result1 int
+		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeCommander) Exec(arg1 string, arg2 ...string) error {
+func (fake *FakeCommander) Exec(cmd string, args ...string) (int, error) {
 	fake.execMutex.Lock()
 	ret, specificReturn := fake.execReturnsOnCall[len(fake.execArgsForCall)]
 	fake.execArgsForCall = append(fake.execArgsForCall, struct {
-		arg1 string
-		arg2 []string
-	}{arg1, arg2})
-	fake.recordInvocation("Exec", []interface{}{arg1, arg2})
+		cmd  string
+		args []string
+	}{cmd, args})
+	fake.recordInvocation("Exec", []interface{}{cmd, args})
 	fake.execMutex.Unlock()
 	if fake.ExecStub != nil {
-		return fake.ExecStub(arg1, arg2...)
+		return fake.ExecStub(cmd, args...)
 	}
 	if specificReturn {
-		return ret.result1
+		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.execReturns
-	return fakeReturns.result1
+	return fake.execReturns.result1, fake.execReturns.result2
 }
 
 func (fake *FakeCommander) ExecCallCount() int {
@@ -49,40 +50,32 @@ func (fake *FakeCommander) ExecCallCount() int {
 	return len(fake.execArgsForCall)
 }
 
-func (fake *FakeCommander) ExecCalls(stub func(string, ...string) error) {
-	fake.execMutex.Lock()
-	defer fake.execMutex.Unlock()
-	fake.ExecStub = stub
-}
-
 func (fake *FakeCommander) ExecArgsForCall(i int) (string, []string) {
 	fake.execMutex.RLock()
 	defer fake.execMutex.RUnlock()
-	argsForCall := fake.execArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return fake.execArgsForCall[i].cmd, fake.execArgsForCall[i].args
 }
 
-func (fake *FakeCommander) ExecReturns(result1 error) {
-	fake.execMutex.Lock()
-	defer fake.execMutex.Unlock()
+func (fake *FakeCommander) ExecReturns(result1 int, result2 error) {
 	fake.ExecStub = nil
 	fake.execReturns = struct {
-		result1 error
-	}{result1}
+		result1 int
+		result2 error
+	}{result1, result2}
 }
 
-func (fake *FakeCommander) ExecReturnsOnCall(i int, result1 error) {
-	fake.execMutex.Lock()
-	defer fake.execMutex.Unlock()
+func (fake *FakeCommander) ExecReturnsOnCall(i int, result1 int, result2 error) {
 	fake.ExecStub = nil
 	if fake.execReturnsOnCall == nil {
 		fake.execReturnsOnCall = make(map[int]struct {
-			result1 error
+			result1 int
+			result2 error
 		})
 	}
 	fake.execReturnsOnCall[i] = struct {
-		result1 error
-	}{result1}
+		result1 int
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeCommander) Invocations() map[string][][]interface{} {
