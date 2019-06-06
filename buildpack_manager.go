@@ -8,25 +8,11 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"time"
 
+	"code.cloudfoundry.org/eirini-staging/builder"
 	"github.com/pkg/errors"
 )
-
-type Buildpack struct {
-	Name       string `json:"name"`
-	Key        string `json:"key"`
-	URL        string `json:"url"`
-	SkipDetect *bool  `json:"skip_detect,omit_empty"`
-}
-
-type StringifiedBuildpack struct {
-	Name       string `json:"name"`
-	Key        string `json:"key"`
-	URL        string `json:"url"`
-	SkipDetect string `json:"skip_detect,omit_empty"`
-}
 
 type BuildpackManager struct {
 	unzipper       Unzipper
@@ -38,7 +24,7 @@ type BuildpackManager struct {
 
 const configFileName = "config.json"
 
-func OpenBuildpackURL(buildpack *Buildpack, client *http.Client) ([]byte, error) {
+func OpenBuildpackURL(buildpack *builder.Buildpack, client *http.Client) ([]byte, error) {
 	resp, err := client.Get(buildpack.URL)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to request buildpack")
@@ -66,7 +52,7 @@ func NewBuildpackManager(internalClient *http.Client, defaultClient *http.Client
 }
 
 func (b *BuildpackManager) Install() error {
-	var buildpacks []Buildpack
+	var buildpacks []builder.Buildpack
 
 	err := json.Unmarshal([]byte(b.buildpacksJSON), &buildpacks)
 	if err != nil {
@@ -83,7 +69,7 @@ func (b *BuildpackManager) Install() error {
 	return b.writeBuildpackJSON(buildpacks)
 }
 
-func (b *BuildpackManager) install(buildpack Buildpack) (err error) {
+func (b *BuildpackManager) install(buildpack builder.Buildpack) (err error) {
 	var bytes []byte
 	bytes, err = OpenBuildpackURL(&buildpack, b.internalClient)
 	if err != nil {
@@ -125,51 +111,8 @@ func (b *BuildpackManager) install(buildpack Buildpack) (err error) {
 	return err
 }
 
-// StringifyBuildpack converts a buildpack's fields to all strings: the format expected by the buildpackapplifecycle.
-func StringifyBuildpack(buildpack Buildpack) StringifiedBuildpack {
-
-	skipDetect := ""
-	if buildpack.SkipDetect != nil {
-		skipDetect = strconv.FormatBool(*buildpack.SkipDetect)
-	}
-
-	return StringifiedBuildpack{
-		Name:       buildpack.Name,
-		Key:        buildpack.Key,
-		URL:        buildpack.URL,
-		SkipDetect: skipDetect,
-	}
-}
-
-// UnStringifyBuildpack converts a stringifyBuildpack back to its original self.
-func UnStringifyBuildpack(buildpack StringifiedBuildpack) (*Buildpack, error) {
-
-	var skipDetect *bool
-
-	if buildpack.SkipDetect != "" {
-		detect, err := strconv.ParseBool(buildpack.SkipDetect)
-		if err != nil {
-			return nil, err
-		}
-
-		skipDetect = &detect
-	}
-
-	return &Buildpack{
-		Name:       buildpack.Name,
-		Key:        buildpack.Key,
-		URL:        buildpack.URL,
-		SkipDetect: skipDetect,
-	}, nil
-}
-
-func (b *BuildpackManager) writeBuildpackJSON(buildpacks []Buildpack) error {
-	stringifiedPacks := make([]StringifiedBuildpack, len(buildpacks))
-	for i, pack := range buildpacks {
-		stringifiedPacks[i] = StringifyBuildpack(pack)
-	}
-
-	bytes, err := json.Marshal(stringifiedPacks)
+func (b *BuildpackManager) writeBuildpackJSON(buildpacks []builder.Buildpack) error {
+	bytes, err := json.Marshal(buildpacks)
 	if err != nil {
 		return err
 	}

@@ -51,5 +51,6 @@ require (
 	google.golang.org/grpc v1.20.0 // indirect
 	gopkg.in/alecthomas/kingpin.v3-unstable v3.0.0-20180810215634-df19058c872c // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
+	gopkg.in/yaml.v2 v2.2.2
 	honnef.co/go/tools v0.0.0-20190411130922-526f6afaca57 // indirect
 )

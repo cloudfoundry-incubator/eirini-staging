@@ -16,6 +16,7 @@ import (
 
 	archive_helpers "code.cloudfoundry.org/archiver/extractor/test_helper"
 	eirinistaging "code.cloudfoundry.org/eirini-staging"
+	"code.cloudfoundry.org/eirini-staging/builder"
 	"code.cloudfoundry.org/urljoiner"
 
 	"code.cloudfoundry.org/bbs/models"
@@ -41,7 +42,7 @@ var _ = Describe("StagingText", func() {
 		appbitBytes    []byte
 		buildpackBytes []byte
 		session        *gexec.Session
-		buildpacks     []eirinistaging.Buildpack
+		buildpacks     []builder.Buildpack
 		buildpacksDir  string
 		workspaceDir   string
 		outputDir      string
@@ -68,6 +69,9 @@ var _ = Describe("StagingText", func() {
 		err = os.Setenv(eirinistaging.EnvOutputDropletLocation, path.Join(outputDir, "droplet.tgz"))
 		Expect(err).NotTo(HaveOccurred())
 		err = os.Setenv(eirinistaging.EnvOutputMetadataLocation, path.Join(outputDir, "result.json"))
+		Expect(err).NotTo(HaveOccurred())
+
+		err = os.Setenv(eirinistaging.CFSTACK, eirinistaging.DefaultCFStack)
 		Expect(err).NotTo(HaveOccurred())
 
 		err = chownR(outputDir, "vcap", "vcap")
@@ -124,6 +128,8 @@ var _ = Describe("StagingText", func() {
 		err = os.RemoveAll(cacheDir)
 		Expect(err).ToNot(HaveOccurred())
 
+		err = os.Unsetenv(eirinistaging.DefaultCFStack)
+		Expect(err).ToNot(HaveOccurred())
 		err = os.Unsetenv(eirinistaging.EnvCertsPath)
 		Expect(err).ToNot(HaveOccurred())
 		err = os.Unsetenv(eirinistaging.EnvStagingGUID)
@@ -175,7 +181,7 @@ var _ = Describe("StagingText", func() {
 				err = os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))
 				Expect(err).ToNot(HaveOccurred())
 
-				buildpacks = []eirinistaging.Buildpack{
+				buildpacks = []builder.Buildpack{
 					{
 						Name: "app_buildpack",
 						Key:  "app_buildpack",
@@ -224,7 +230,7 @@ var _ = Describe("StagingText", func() {
 
 			Context("fails", func() {
 				BeforeEach(func() {
-					buildpacks = []eirinistaging.Buildpack{
+					buildpacks = []builder.Buildpack{
 						{
 							Name: "app_buildpack",
 							Key:  "app_buildpack",
@@ -286,7 +292,7 @@ var _ = Describe("StagingText", func() {
 					err = os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))
 					Expect(err).ToNot(HaveOccurred())
 
-					buildpacks = []eirinistaging.Buildpack{
+					buildpacks = []builder.Buildpack{
 						{
 							Name: "ruby_buildpack",
 							Key:  "ruby_buildpack",
@@ -347,7 +353,7 @@ var _ = Describe("StagingText", func() {
 					err = os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))
 					Expect(err).ToNot(HaveOccurred())
 
-					buildpacks = []eirinistaging.Buildpack{
+					buildpacks = []builder.Buildpack{
 						{
 							Name: "ruby_buildpack",
 							Key:  "ruby_buildpack",
@@ -432,13 +438,12 @@ var _ = Describe("StagingText", func() {
 					err = os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))
 					Expect(err).ToNot(HaveOccurred())
 
-					detect := true
-					buildpacks = []eirinistaging.Buildpack{
+					buildpacks = []builder.Buildpack{
 						{
 							Name:       "ruby_buildpack",
 							Key:        "ruby_buildpack",
 							URL:        urljoiner.Join(server.URL(), "/my-buildpack"),
-							SkipDetect: &detect,
+							SkipDetect: true,
 						},
 					}
 
@@ -527,7 +532,7 @@ var _ = Describe("StagingText", func() {
 					})
 
 					JustBeforeEach(func() {
-						buildpacks = []eirinistaging.Buildpack{
+						buildpacks = []builder.Buildpack{
 							{
 								Name: "ruby_buildpack",
 								Key:  "ruby_buildpack",
@@ -561,7 +566,7 @@ var _ = Describe("StagingText", func() {
 						cmd := exec.Command(binaries.ExecutorPath)
 						session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 						Eventually(session, 80).Should(gexec.Exit())
-						Expect(session.ExitCode()).To(Equal(eirinistaging.DetectFailCode))
+						Expect(session.ExitCode()).To(Equal(builder.DetectFailCode))
 					})
 				})
 
@@ -583,13 +588,12 @@ var _ = Describe("StagingText", func() {
 					})
 
 					JustBeforeEach(func() {
-						skipDetect := true
-						buildpacks = []eirinistaging.Buildpack{
+						buildpacks = []builder.Buildpack{
 							{
 								Name:       "ruby_buildpack",
 								Key:        "ruby_buildpack",
 								URL:        urljoiner.Join(server.URL(), "/my-buildpack"),
-								SkipDetect: &skipDetect,
+								SkipDetect: true,
 							},
 						}
 
@@ -619,7 +623,7 @@ var _ = Describe("StagingText", func() {
 						cmd := exec.Command(binaries.ExecutorPath)
 						session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 						Eventually(session, 80).Should(gexec.Exit())
-						Expect(session.ExitCode()).To(Equal(eirinistaging.CompileFailCode))
+						Expect(session.ExitCode()).To(Equal(builder.CompileFailCode))
 					})
 				})
 
@@ -648,13 +652,12 @@ var _ = Describe("StagingText", func() {
 					})
 
 					JustBeforeEach(func() {
-						skipDetect := true
-						buildpacks = []eirinistaging.Buildpack{
+						buildpacks = []builder.Buildpack{
 							{
 								Name:       "ruby_buildpack",
 								Key:        "ruby_buildpack",
 								URL:        urljoiner.Join(server.URL(), "/my-buildpack"),
-								SkipDetect: &skipDetect,
+								SkipDetect: true,
 							},
 						}
 
@@ -684,7 +687,7 @@ var _ = Describe("StagingText", func() {
 						cmd := exec.Command(binaries.ExecutorPath)
 						session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 						Eventually(session, 80).Should(gexec.Exit())
-						Expect(session.ExitCode()).To(Equal(eirinistaging.ReleaseFailCode))
+						Expect(session.ExitCode()).To(Equal(builder.ReleaseFailCode))
 					})
 				})
 
@@ -717,13 +720,12 @@ var _ = Describe("StagingText", func() {
 					err = os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))
 					Expect(err).ToNot(HaveOccurred())
 
-					detect := true
-					buildpacks = []eirinistaging.Buildpack{
+					buildpacks = []builder.Buildpack{
 						{
 							Name:       "binary_buildpack",
 							Key:        "binary_buildpack",
 							URL:        urljoiner.Join(server.URL(), "/my-buildpack"),
-							SkipDetect: &detect,
+							SkipDetect: true,
 						},
 					}
 
@@ -801,7 +803,7 @@ var _ = Describe("StagingText", func() {
 				err = os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))
 				Expect(err).ToNot(HaveOccurred())
 
-				buildpacks = []eirinistaging.Buildpack{
+				buildpacks = []builder.Buildpack{
 					{
 						Name: "ruby_buildpack",
 						Key:  "ruby_buildpack",

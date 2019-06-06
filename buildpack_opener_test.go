@@ -3,16 +3,18 @@ package eirinistaging_test
 import (
 	"net/http"
 
-	eirinistaging "code.cloudfoundry.org/eirini-staging"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	eirinistaging "code.cloudfoundry.org/eirini-staging"
+	"code.cloudfoundry.org/eirini-staging/builder"
 	"github.com/onsi/gomega/ghttp"
 )
 
 var _ = Describe("BuildpackManager", func() {
 
 	var (
-		buildpack       eirinistaging.Buildpack
+		buildpack       builder.Buildpack
 		server          *ghttp.Server
 		responseContent string
 		downloadURL     string
@@ -45,7 +47,7 @@ var _ = Describe("BuildpackManager", func() {
 				)
 				downloadURL = server.URL() + "/buildpack"
 
-				buildpack = eirinistaging.Buildpack{
+				buildpack = builder.Buildpack{
 					Name: "custom",
 					Key:  "some_key",
 					URL:  downloadURL,
@@ -63,7 +65,7 @@ var _ = Describe("BuildpackManager", func() {
 
 		Context("and it is NOT a valid url", func() {
 			BeforeEach(func() {
-				buildpack = eirinistaging.Buildpack{
+				buildpack = builder.Buildpack{
 					Name: "custom",
 					Key:  "some_key",
 					URL:  "___terrible::::__url",
@@ -88,7 +90,7 @@ var _ = Describe("BuildpackManager", func() {
 					),
 				)
 
-				buildpack = eirinistaging.Buildpack{
+				buildpack = builder.Buildpack{
 					Name: "custom",
 					Key:  "some_key",
 					URL:  server.URL() + "/buildpack",

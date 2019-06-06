@@ -10,6 +10,7 @@ import (
 
 	bap "code.cloudfoundry.org/buildpackapplifecycle"
 	. "code.cloudfoundry.org/eirini-staging"
+	"code.cloudfoundry.org/eirini-staging/builder"
 	"code.cloudfoundry.org/eirini-staging/eirinistagingfakes"
 )
 
@@ -55,7 +56,7 @@ var _ = Describe("PacksExecutor", func() {
 
 	JustBeforeEach(func() {
 		createTmpFile()
-		packsConf := PacksBuilderConf{
+		packsConf := builder.Config{
 			PacksBuilderPath:          "/packs/builder",
 			BuildpacksDir:             "/var/lib/buildpacks",
 			OutputDropletLocation:     "/out/droplet.tgz",
@@ -64,10 +65,8 @@ var _ = Describe("PacksExecutor", func() {
 		}
 
 		executor = &PacksExecutor{
-			Conf:        packsConf,
-			Commander:   commander,
-			Extractor:   extractor,
-			DownloadDir: downloadDir,
+			Conf: &packsConf,
+			// DownloadDir: downloadDir,
 		}
 
 	})

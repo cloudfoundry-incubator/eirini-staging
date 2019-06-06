@@ -13,6 +13,7 @@ import (
 	"github.com/onsi/gomega/ghttp"
 
 	eirinistaging "code.cloudfoundry.org/eirini-staging"
+	"code.cloudfoundry.org/eirini-staging/builder"
 )
 
 var _ = Describe("Buildpackmanager", func() {
@@ -22,7 +23,7 @@ var _ = Describe("Buildpackmanager", func() {
 		buildpackDir     string
 		buildpacksJSON   []byte
 		buildpackManager eirinistaging.Installer
-		buildpacks       []eirinistaging.Buildpack
+		buildpacks       []builder.Buildpack
 		server           *ghttp.Server
 		responseContent  []byte
 		err              error
@@ -61,7 +62,7 @@ var _ = Describe("Buildpackmanager", func() {
 
 	Context("When a list of Buildpacks needs be installed", func() {
 		BeforeEach(func() {
-			buildpacks = []eirinistaging.Buildpack{
+			buildpacks = []builder.Buildpack{
 				{
 					Name: "my_buildpack",
 					Key:  "my-key",
@@ -95,33 +96,21 @@ var _ = Describe("Buildpackmanager", func() {
 			actualBytes, err = ioutil.ReadFile(filepath.Join(buildpackDir, "config.json"))
 			Expect(err).ToNot(HaveOccurred())
 
-			var actualStringifiedBuildpacks []eirinistaging.StringifiedBuildpack
-			err = json.Unmarshal(actualBytes, &actualStringifiedBuildpacks)
+			var actualBuildpacks []builder.Buildpack
+			err = json.Unmarshal(actualBytes, &actualBuildpacks)
 			Expect(err).ToNot(HaveOccurred())
-
-			var actualBuildpacks []eirinistaging.Buildpack
-			for _, b := range actualStringifiedBuildpacks {
-
-				var original *eirinistaging.Buildpack
-				original, err = eirinistaging.UnStringifyBuildpack(b)
-				Expect(err).NotTo(HaveOccurred())
-
-				actualBuildpacks = append(actualBuildpacks, *original)
-			}
-
 			Expect(buildpacks).To(ConsistOf(actualBuildpacks))
 		})
 	})
 
 	Context("When a single buildpack with skip detect is provided", func() {
 		BeforeEach(func() {
-			detect := true
-			buildpacks = []eirinistaging.Buildpack{
+			buildpacks = []builder.Buildpack{
 				{
 					Name:       "my_buildpack",
 					Key:        "my-key",
 					URL:        fmt.Sprintf("%s/my-buildpack", server.URL()),
-					SkipDetect: &detect,
+					SkipDetect: true,
 				},
 			}
 		})
@@ -144,23 +133,9 @@ var _ = Describe("Buildpackmanager", func() {
 			actualBytes, err = ioutil.ReadFile(filepath.Join(buildpackDir, "config.json"))
 			Expect(err).ToNot(HaveOccurred())
 
-			var actualStringifiedBuildpacks []eirinistaging.StringifiedBuildpack
-			err = json.Unmarshal(actualBytes, &actualStringifiedBuildpacks)
+			var actualBuildpacks []builder.Buildpack
+			err = json.Unmarshal(actualBytes, &actualBuildpacks)
 			Expect(err).ToNot(HaveOccurred())
-
-			var actualBuildpacks []eirinistaging.Buildpack
-			for _, b := range actualStringifiedBuildpacks {
-
-				var original *eirinistaging.Buildpack
-				original, err = eirinistaging.UnStringifyBuildpack(b)
-				Expect(err).NotTo(HaveOccurred())
-
-				detect := true
-				original.SkipDetect = &detect
-
-				actualBuildpacks = append(actualBuildpacks, *original)
-			}
-
 			Expect(buildpacks).To(ConsistOf(actualBuildpacks))
 		})
 	})
@@ -179,7 +154,7 @@ var _ = Describe("Buildpackmanager", func() {
 				),
 			)
 
-			buildpacks = []eirinistaging.Buildpack{
+			buildpacks = []builder.Buildpack{
 				{
 					Name: "bad_buildpack",
 					Key:  "bad-key",

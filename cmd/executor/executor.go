@@ -1,10 +1,13 @@
 package main
 
 import (
+	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 
 	eirinistaging "code.cloudfoundry.org/eirini-staging"
+	"code.cloudfoundry.org/eirini-staging/builder"
 	"github.com/pkg/errors"
 )
 
@@ -48,34 +51,44 @@ func main() {
 
 	responder := eirinistaging.NewResponder(stagingGUID, completionCallback, eiriniAddress)
 
-	commander := &eirinistaging.IOCommander{
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
-		Stdin:  os.Stdin,
-	}
+	// commander := &eirinistaging.IOCommander{
+	// 	Stdout: os.Stdout,
+	// 	Stderr: os.Stderr,
+	// 	Stdin:  os.Stdin,
+	// }
 
-	packsConf := eirinistaging.PacksBuilderConf{
+	exitReason := "failed to create droplet"
+	exitCode := 1
+
+	buildDir, err := extract(downloadDir)
+	if err != nil {
+		responder.RespondWithFailure(errors.Wrap(err, exitReason))
+		os.Exit(exitCode)
+	}
+	defer cleanup(buildDir)
+
+	buildConfig, err := builder.Config{
+		BuildDir:                  buildDir,
 		PacksBuilderPath:          packsBuilderPath,
 		BuildpacksDir:             buildpacksDir,
 		OutputDropletLocation:     outputDropletLocation,
 		OutputBuildArtifactsCache: outputBuildArtifactsCache,
 		OutputMetadataLocation:    outputMetadataLocation,
+	}.Init(downloadDir, buildpackCfg)
+	if err != nil {
+		responder.RespondWithFailure(errors.Wrap(err, exitReason))
+		os.Exit(exitCode)
 	}
 
 	executor := &eirinistaging.PacksExecutor{
-		Conf:           packsConf,
-		Commander:      commander,
-		Extractor:      &eirinistaging.Unzipper{},
-		DownloadDir:    downloadDir,
-		BuildpacksJSON: buildpackCfg,
+		Conf: &buildConfig,
+		// Commander: commander,
 	}
 
-	err := executor.ExecuteRecipe()
+	err = executor.ExecuteRecipe()
 	if err != nil {
-		exitReason := "failed to create droplet"
-		exitCode := 1
-		if withExitCode, ok := err.(eirinistaging.ErrorWithExitCode); ok {
-			exitReason = errorMessage(withExitCode.ExitCode)
+		exitCode := builder.SystemFailCode
+		if withExitCode, ok := err.(builder.DescriptiveError); ok {
 			exitCode = withExitCode.ExitCode
 		}
 		responder.RespondWithFailure(errors.Wrap(err, exitReason))
@@ -83,15 +96,26 @@ func main() {
 	}
 }
 
-func errorMessage(exitCode int) string {
-	switch exitCode {
-	case eirinistaging.DetectFailCode:
-		return eirinistaging.DetectFailMsg
-	case eirinistaging.CompileFailCode:
-		return eirinistaging.CompileFailMsg
-	case eirinistaging.ReleaseFailCode:
-		return eirinistaging.ReleaseFailMsg
-	default:
-		return eirinistaging.Unknown
+func extract(downloadDir string) (string, error) {
+	extractor := &eirinistaging.Unzipper{}
+	buildDir, err := ioutil.TempDir("", "app-bits")
+	if err != nil {
+		return "", err
 	}
+
+	err = extractor.Extract(filepath.Join(downloadDir, eirinistaging.AppBits), buildDir)
+	if err != nil {
+		return "", err
+	}
+
+	return buildDir, err
+}
+
+func cleanup(buildDir string) error {
+	err := os.RemoveAll(buildDir)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
