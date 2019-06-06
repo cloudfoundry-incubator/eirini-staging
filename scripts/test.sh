@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-ginkgo .
+ginkgo -r -skipPackage integration .

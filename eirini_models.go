@@ -19,9 +19,11 @@ const (
 	EnvOutputBuildArtifactsCache = "EIRINI_OUTPUT_BUILD_ARTIFACTS_CACHE"
 	EnvOutputMetadataLocation    = "EIRINI_OUTPUT_METADATA_LOCATION"
 	EnvPacksBuilderPath          = "EIRINI_PACKS_BUILDER_PATH"
+	CFSTACK                      = "CF_STACK"
 
 	RegisteredRoutes = "routes"
 
+	DefaultCFStack                  = "cflinuxfs2"
 	AppBits                         = "app.zip"
 	RecipeBuildPacksDir             = "/var/lib/buildpacks"
 	RecipeBuildPacksName            = "recipe-buildpacks"
