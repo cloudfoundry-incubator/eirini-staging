@@ -141,7 +141,7 @@ var _ = Describe("Building", func() {
 			JustBeforeEach(func() {
 				go func() {
 					log.SetOutput(pw)
-					runner.Run()
+					_ = runner.Run()
 					pw.Close()
 				}()
 			})
@@ -151,7 +151,9 @@ var _ = Describe("Building", func() {
 			})
 
 			It("should have chosen the second buildpack detect", func() {
-				ioutil.ReadAll(pr)
+				_, err := ioutil.ReadAll(pr)
+				Expect(err).NotTo(HaveOccurred())
+
 				data := &struct {
 					LifeCycle struct {
 						Key string `json:"buildpack_key"`
@@ -458,7 +460,9 @@ var _ = Describe("Building", func() {
 		JustBeforeEach(func() {
 			go func() {
 				log.SetOutput(pw)
-				runner.Run()
+				defer GinkgoRecover()
+				err = runner.Run()
+				Expect(err).NotTo(HaveOccurred())
 				pw.Close()
 			}()
 
@@ -618,7 +622,9 @@ var _ = Describe("Building", func() {
 		JustBeforeEach(func() {
 			go func() {
 				log.SetOutput(pw)
-				runner.Run()
+				defer GinkgoRecover()
+				err = runner.Run()
+				Expect(err).NotTo(HaveOccurred())
 				pw.Close()
 			}()
 
@@ -786,7 +792,9 @@ var _ = Describe("Building", func() {
 		JustBeforeEach(func() {
 			go func() {
 				log.SetOutput(pw)
-				runner.Run()
+				defer GinkgoRecover()
+				err := runner.Run()
+				Expect(err).NotTo(HaveOccurred())
 				pw.Close()
 			}()
 		})
