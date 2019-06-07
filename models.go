@@ -1,6 +1,8 @@
 package eirinistaging
 
-import bap "code.cloudfoundry.org/buildpackapplifecycle"
+import (
+	"code.cloudfoundry.org/eirini-staging/builder"
+)
 
 type Executor interface {
 	ExecuteRecipe() error
@@ -8,7 +10,7 @@ type Executor interface {
 
 //go:generate counterfeiter . StagingResultModifier
 type StagingResultModifier interface {
-	Modify(result bap.StagingResult) (bap.StagingResult, error)
+	Modify(result builder.StagingResult) (builder.StagingResult, error)
 }
 
 //go:generate counterfeiter . Uploader

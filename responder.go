@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 
 	"code.cloudfoundry.org/bbs/models"
-	bap "code.cloudfoundry.org/buildpackapplifecycle"
+	"code.cloudfoundry.org/eirini-staging/builder"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	"github.com/pkg/errors"
 )
@@ -101,15 +101,15 @@ func (r Responder) createFailureResponse(failure error, stagingGUID, completionC
 	}
 }
 
-func (r Responder) getStagingResult(path string) (bap.StagingResult, error) {
+func (r Responder) getStagingResult(path string) (builder.StagingResult, error) {
 	contents, err := ioutil.ReadFile(filepath.Clean(path))
 	if err != nil {
-		return bap.StagingResult{}, errors.Wrap(err, "failed to read result.json")
+		return builder.StagingResult{}, errors.Wrap(err, "failed to read result.json")
 	}
-	var stagingResult bap.StagingResult
+	var stagingResult builder.StagingResult
 	err = json.Unmarshal(contents, &stagingResult)
 	if err != nil {
-		return bap.StagingResult{}, err
+		return builder.StagingResult{}, err
 	}
 	return stagingResult, nil
 }

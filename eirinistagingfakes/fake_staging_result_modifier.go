@@ -4,33 +4,33 @@ package eirinistagingfakes
 import (
 	"sync"
 
-	bap "code.cloudfoundry.org/buildpackapplifecycle"
 	eirinistaging "code.cloudfoundry.org/eirini-staging"
+	"code.cloudfoundry.org/eirini-staging/builder"
 )
 
 type FakeStagingResultModifier struct {
-	ModifyStub        func(result bap.StagingResult) (bap.StagingResult, error)
+	ModifyStub        func(result builder.StagingResult) (builder.StagingResult, error)
 	modifyMutex       sync.RWMutex
 	modifyArgsForCall []struct {
-		result bap.StagingResult
+		result builder.StagingResult
 	}
 	modifyReturns struct {
-		result1 bap.StagingResult
+		result1 builder.StagingResult
 		result2 error
 	}
 	modifyReturnsOnCall map[int]struct {
-		result1 bap.StagingResult
+		result1 builder.StagingResult
 		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeStagingResultModifier) Modify(result bap.StagingResult) (bap.StagingResult, error) {
+func (fake *FakeStagingResultModifier) Modify(result builder.StagingResult) (builder.StagingResult, error) {
 	fake.modifyMutex.Lock()
 	ret, specificReturn := fake.modifyReturnsOnCall[len(fake.modifyArgsForCall)]
 	fake.modifyArgsForCall = append(fake.modifyArgsForCall, struct {
-		result bap.StagingResult
+		result builder.StagingResult
 	}{result})
 	fake.recordInvocation("Modify", []interface{}{result})
 	fake.modifyMutex.Unlock()
@@ -49,30 +49,30 @@ func (fake *FakeStagingResultModifier) ModifyCallCount() int {
 	return len(fake.modifyArgsForCall)
 }
 
-func (fake *FakeStagingResultModifier) ModifyArgsForCall(i int) bap.StagingResult {
+func (fake *FakeStagingResultModifier) ModifyArgsForCall(i int) builder.StagingResult {
 	fake.modifyMutex.RLock()
 	defer fake.modifyMutex.RUnlock()
 	return fake.modifyArgsForCall[i].result
 }
 
-func (fake *FakeStagingResultModifier) ModifyReturns(result1 bap.StagingResult, result2 error) {
+func (fake *FakeStagingResultModifier) ModifyReturns(result1 builder.StagingResult, result2 error) {
 	fake.ModifyStub = nil
 	fake.modifyReturns = struct {
-		result1 bap.StagingResult
+		result1 builder.StagingResult
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeStagingResultModifier) ModifyReturnsOnCall(i int, result1 bap.StagingResult, result2 error) {
+func (fake *FakeStagingResultModifier) ModifyReturnsOnCall(i int, result1 builder.StagingResult, result2 error) {
 	fake.ModifyStub = nil
 	if fake.modifyReturnsOnCall == nil {
 		fake.modifyReturnsOnCall = make(map[int]struct {
-			result1 bap.StagingResult
+			result1 builder.StagingResult
 			result2 error
 		})
 	}
 	fake.modifyReturnsOnCall[i] = struct {
-		result1 bap.StagingResult
+		result1 builder.StagingResult
 		result2 error
 	}{result1, result2}
 }

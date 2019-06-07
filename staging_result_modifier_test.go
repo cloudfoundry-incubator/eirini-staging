@@ -4,16 +4,16 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	bap "code.cloudfoundry.org/buildpackapplifecycle"
 	. "code.cloudfoundry.org/eirini-staging"
+	"code.cloudfoundry.org/eirini-staging/builder"
 )
 
 var _ = Describe("BuildpacksKeyModifier", func() {
 
 	var (
 		modifier       BuildpacksKeyModifier
-		modifiedResult bap.StagingResult
-		providedResult bap.StagingResult
+		modifiedResult builder.StagingResult
+		providedResult builder.StagingResult
 		err            error
 	)
 
@@ -30,10 +30,10 @@ var _ = Describe("BuildpacksKeyModifier", func() {
 				"key":"ruby-buildpack-key-42"
 			}]`
 
-			providedResult = bap.StagingResult{
-				LifecycleMetadata: bap.LifecycleMetadata{
+			providedResult = builder.StagingResult{
+				LifecycleMetadata: builder.LifecycleMetadata{
 					BuildpackKey: "ruby_buildpack",
-					Buildpacks: []bap.BuildpackMetadata{
+					Buildpacks: []builder.BuildpackMetadata{
 						{Key: "ruby_buildpack"},
 						{Key: "java_buildpack"},
 					},
@@ -54,10 +54,10 @@ var _ = Describe("BuildpacksKeyModifier", func() {
 		})
 
 		It("should replace the buildpack keys with the ones provided by CC", func() {
-			Expect(modifiedResult).To(Equal(bap.StagingResult{
-				LifecycleMetadata: bap.LifecycleMetadata{
+			Expect(modifiedResult).To(Equal(builder.StagingResult{
+				LifecycleMetadata: builder.LifecycleMetadata{
 					BuildpackKey: "ruby-buildpack-key-42",
-					Buildpacks: []bap.BuildpackMetadata{
+					Buildpacks: []builder.BuildpackMetadata{
 						{Key: "ruby-buildpack-key-42"},
 						{Key: "java-buildpack-key-420"},
 					},
@@ -82,10 +82,10 @@ var _ = Describe("BuildpacksKeyModifier", func() {
 		Context("When staging result's buildpack_key is not available in CC", func() {
 
 			BeforeEach(func() {
-				providedResult = bap.StagingResult{
-					LifecycleMetadata: bap.LifecycleMetadata{
+				providedResult = builder.StagingResult{
+					LifecycleMetadata: builder.LifecycleMetadata{
 						BuildpackKey: "wat is this",
-						Buildpacks: []bap.BuildpackMetadata{
+						Buildpacks: []builder.BuildpackMetadata{
 							{Key: "ruby_buildpack"},
 							{Key: "java_buildpack"},
 						},
@@ -101,10 +101,10 @@ var _ = Describe("BuildpacksKeyModifier", func() {
 		Context("When staging result's buildpacks metadata key  is not available in CC", func() {
 
 			BeforeEach(func() {
-				providedResult = bap.StagingResult{
-					LifecycleMetadata: bap.LifecycleMetadata{
+				providedResult = builder.StagingResult{
+					LifecycleMetadata: builder.LifecycleMetadata{
 						BuildpackKey: "ruby_buildpack",
-						Buildpacks: []bap.BuildpackMetadata{
+						Buildpacks: []builder.BuildpackMetadata{
 							{Key: "ruby_buildpack"},
 							{Key: "build wat"},
 						},

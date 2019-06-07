@@ -3,8 +3,6 @@ code.cloudfoundry.org/archiver v0.0.0-20180525162158-e135af3d5a2a h1:08sH6EQehbQ
 code.cloudfoundry.org/archiver v0.0.0-20180525162158-e135af3d5a2a/go.mod h1:EU/KcUvh4qBVN6ffu/b8t9x7SurDot+AO0HqEZ+9QOg=
 code.cloudfoundry.org/bbs v0.0.0-20190329173803-be932b28e023 h1:HXBZgLjZ1qVIK/qjhVpC02RzKb1NPRtUx5vd9/JcOCg=
 code.cloudfoundry.org/bbs v0.0.0-20190329173803-be932b28e023/go.mod h1:XKlGVVXFi5EcHHMPzw3xgONK9PeEZuUbIC43XNwxD10=
-code.cloudfoundry.org/buildpackapplifecycle v0.0.0-20190221201359-5a0eeb8db891 h1:MU94tO5UUw2+uGG+YaGSRppmpLUxg7r5NJD2PiKX2rM=
-code.cloudfoundry.org/buildpackapplifecycle v0.0.0-20190221201359-5a0eeb8db891/go.mod h1:HYcRj8n4GH2YcnsrJP9BRPHIHUMTecbNIv1ILL8TaGI=
 code.cloudfoundry.org/cfhttp/v2 v2.0.0 h1:4+mLfyzm84gUpJnCT68BLPUypGgvUsYq29QKaSotTz4=
 code.cloudfoundry.org/cfhttp/v2 v2.0.0/go.mod h1:Fwt0o/haXfwgOHMom4AM96pXCVw9EAiIcSsPb8hWK9s=
 code.cloudfoundry.org/clock v0.0.0-20180518195852-02e53af36e6c h1:5eeuG0BHx1+DHeT3AP+ISKZ2ht1UjGhm581ljqYpVeQ=
