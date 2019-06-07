@@ -15,6 +15,10 @@ const (
 	ExitReason = "failed to create droplet"
 )
 
+var (
+	exitCode = 1
+)
+
 func main() {
 	log.Println("executor-started")
 	defer log.Println("executor-done")
@@ -55,33 +59,26 @@ func main() {
 
 	responder := eirinistaging.NewResponder(stagingGUID, completionCallback, eiriniAddress)
 
-	exitCode := 1
-
 	buildDir, err := extract(downloadDir)
 	if err != nil {
 		responder.RespondWithFailure(errors.Wrap(err, ExitReason))
 		os.Exit(exitCode)
 	}
-	defer cleanup(buildDir)
+	defer os.RemoveAll(buildDir)
 
-	buildConfig, err := builder.Config{
-		BuildDir:                  buildDir,
-		BuildpacksDir:             buildpacksDir,
-		OutputDropletLocation:     outputDropletLocation,
-		OutputBuildArtifactsCache: outputBuildArtifactsCache,
-		OutputMetadataLocation:    outputMetadataLocation,
-		BuildArtifactsCache:       cacheDir,
-	}.Init(buildpackCfg)
+	buildConfig, err := builder.NewConfig(
+		buildDir, buildpacksDir,
+		outputDropletLocation,
+		outputBuildArtifactsCache,
+		outputMetadataLocation,
+		cacheDir, buildpackCfg,
+	)
 	if err != nil {
 		responder.RespondWithFailure(errors.Wrap(err, ExitReason))
 		os.Exit(exitCode)
 	}
 
-	executor := &eirinistaging.PacksExecutor{
-		Conf: &buildConfig,
-	}
-
-	err = executor.ExecuteRecipe()
+	err = execute(&buildConfig)
 	if err != nil {
 		exitCode := builder.SystemFailCode
 		if withExitCode, ok := err.(builder.DescriptiveError); ok {
@@ -90,6 +87,18 @@ func main() {
 		responder.RespondWithFailure(errors.Wrap(err, ExitReason))
 		os.Exit(exitCode)
 	}
+}
+
+func execute(conf *builder.Config) error {
+	runner := builder.NewRunner(conf)
+	defer runner.CleanUp()
+
+	err := runner.Run()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func extract(downloadDir string) (string, error) {
@@ -105,13 +114,4 @@ func extract(downloadDir string) (string, error) {
 	}
 
 	return buildDir, err
-}
-
-func cleanup(buildDir string) error {
-	err := os.RemoveAll(buildDir)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

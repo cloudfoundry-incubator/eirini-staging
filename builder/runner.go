@@ -84,11 +84,11 @@ func (runner *Runner) Run() error {
 	return nil
 }
 
-func (runner *Runner) CleanUp() error {
+func (runner *Runner) CleanUp() {
 	if runner.contentsDir == "" {
-		return nil
+		return
 	}
-	return os.RemoveAll(runner.contentsDir)
+	os.RemoveAll(runner.contentsDir)
 }
 
 func (runner *Runner) supplyOrDetect() (string, []BuildpackMetadata, error) {

@@ -19,7 +19,27 @@ type Config struct {
 	BuildArtifactsCache       string
 }
 
-func (s Config) Init(buildpacksJSON string) (Config, error) {
+func NewConfig(
+	buildDir string,
+	buildpacksDir string,
+	outputDropletLocation string,
+	outputBuildArtifactsCache string,
+	outputMetadataLocation string,
+	buildArtifactsCache string,
+	buildpackJSON string,
+) (Config, error) {
+	cfg := Config{
+		BuildDir:                  buildDir,
+		BuildpacksDir:             buildpacksDir,
+		OutputDropletLocation:     outputDropletLocation,
+		OutputBuildArtifactsCache: outputBuildArtifactsCache,
+		OutputMetadataLocation:    outputMetadataLocation,
+		BuildArtifactsCache:       buildArtifactsCache,
+	}
+	return cfg.init(buildpackJSON)
+}
+
+func (s Config) init(buildpacksJSON string) (Config, error) {
 	if buildpacksJSON != "" {
 		var buildpacks []Buildpack
 		err := json.Unmarshal([]byte(buildpacksJSON), &buildpacks)
