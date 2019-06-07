@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -36,11 +37,11 @@ func NewRunner(config *Config) *Runner {
 	}
 }
 
-func (runner *Runner) Run() (string, error) {
+func (runner *Runner) Run() error {
 	//set up the world
 	err := runner.makeDirectories()
 	if err != nil {
-		return "", NewDescriptiveError(err, "Failed to set up filesystem when generating droplet")
+		return NewDescriptiveError(err, "Failed to set up filesystem when generating droplet")
 	}
 
 	// err = runner.downloadBuildpacks()
@@ -54,43 +55,43 @@ func (runner *Runner) Run() (string, error) {
 
 	err = runner.cleanCacheDir()
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	if runner.config.SkipDetect {
 		detectedBuildpack, detectedBuildpackDir, err = runner.runSupplyBuildpacks()
 		if err != nil {
-			return "", err
+			return err
 		}
 	} else {
 		detectedBuildpack, detectedBuildpackDir, detectOutput, ok = runner.detect()
 		if !ok {
-			return "", NewDescriptiveError(nil, DetectFailMsg)
+			return NewDescriptiveError(errors.New("None of the buildpacks detected a compatible application"), DetectFailMsg)
 		}
 	}
 
 	if err := runner.runFinalize(detectedBuildpackDir); err != nil {
-		return "", NewDescriptiveError(err, CompileFailMsg)
+		return err
 	}
 
 	startCommands, err := runner.readProcfile()
 	if err != nil {
-		return "", NewDescriptiveError(err, "Failed to read command from Procfile")
+		return NewDescriptiveError(err, "Failed to read command from Procfile")
 	}
 
 	releaseInfo, err := runner.release(detectedBuildpackDir, startCommands)
 	if err != nil {
-		return "", NewDescriptiveError(err, ReleaseFailMsg)
+		return NewDescriptiveError(errors.New(fmt.Sprintf("%s %s", "Failed to build droplet release", err.Error())), ReleaseFailMsg)
 	}
 
 	if releaseInfo.DefaultProcessTypes["web"] == "" {
-		printError("No start command specified by buildpack or via Procfile.")
-		printError("App will not start unless a command is provided at runtime.")
+		logError("No start command specified by buildpack or via Procfile.")
+		logError("App will not start unless a command is provided at runtime.")
 	}
 
 	tarPath, err := runner.findTar()
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	var buildpacks []BuildpackMetadata
@@ -103,42 +104,41 @@ func (runner *Runner) Run() (string, error) {
 		}
 	}
 
-	//generate staging_info.yml and result json file
-	infoFilePath := filepath.Join(runner.contentsDir, "staging_info.yml")
-	err = runner.saveInfo(infoFilePath, buildpacks, releaseInfo)
+	// generate result json file
+	err = runner.saveInfo(buildpacks, releaseInfo)
 	if err != nil {
-		return "", NewDescriptiveError(err, "Failed to encode generated metadata")
+		return NewDescriptiveError(err, "Failed to encode generated metadata")
 	}
 
 	for _, name := range []string{"tmp", "logs"} {
 		if err := os.MkdirAll(filepath.Join(runner.contentsDir, name), 0755); err != nil {
-			return "", NewDescriptiveError(err, "Failed to set up droplet filesystem")
+			return NewDescriptiveError(err, "Failed to set up droplet filesystem")
 		}
 	}
 
 	appDir := filepath.Join(runner.contentsDir, "app")
 	err = runner.copyApp(runner.config.BuildDir, appDir)
 	if err != nil {
-		return "", NewDescriptiveError(err, "Failed to copy compiled droplet")
+		return NewDescriptiveError(err, "Failed to copy compiled droplet")
 	}
 
 	err = exec.Command(tarPath, "-czf", runner.config.OutputDropletLocation, "-C", runner.contentsDir, ".").Run()
 	if err != nil {
-		return "", NewDescriptiveError(err, "Failed to compress droplet filesystem")
+		return NewDescriptiveError(err, "Failed to compress droplet filesystem")
 	}
 
-	//prepare the build artifacts cache output directory
+	// prepare the build artifacts cache output directory
 	err = os.MkdirAll(filepath.Dir(runner.config.OutputBuildArtifactsCache), 0755)
 	if err != nil {
-		return "", NewDescriptiveError(err, "Failed to create output build artifacts cache dir")
+		return NewDescriptiveError(err, "Failed to create output build artifacts cache dir")
 	}
 
 	err = exec.Command(tarPath, "-czf", runner.config.OutputBuildArtifactsCache, "-C", runner.config.BuildArtifactsCacheDir(), ".").Run()
 	if err != nil {
-		return "", NewDescriptiveError(err, "Failed to compress build artifacts")
+		return NewDescriptiveError(err, "Failed to compress build artifacts")
 	}
 
-	return infoFilePath, nil
+	return nil
 }
 
 func (runner *Runner) CleanUp() error {
@@ -228,7 +228,7 @@ func (runner *Runner) makeDirectories() error {
 // 			zipDownloader := NewZipDownloader(runner.config.SkipCertVerify())
 // 			size, downloadErr = zipDownloader.DownloadAndExtract(buildpackURL, destination)
 // 			if downloadErr == nil {
-// 				fmt.Printf("Downloaded buildpack `%s` (%s)\n", buildpackURL.String(), bytefmt.ByteSize(size))
+// 				log.Printf("Downloaded buildpack `%s` (%s)\n", buildpackURL.String(), bytefmt.ByteSize(size))
 // 			}
 // 		} else {
 // 			downloadErr = GitClone(*buildpackURL, destination)
@@ -315,10 +315,11 @@ func (runner *Runner) runSupplyBuildpacks() (string, string, error) {
 	if err := runner.validateSupplyBuildpacks(); err != nil {
 		return "", "", err
 	}
+
 	for i, buildpack := range runner.config.SupplyBuildpacks() {
 		buildpackPath, err := runner.buildpackPath(buildpack)
 		if err != nil {
-			printError(err.Error())
+			logError(err.Error())
 			return "", "", NewDescriptiveError(err, SupplyFailMsg)
 		}
 
@@ -341,7 +342,7 @@ func (runner *Runner) validateSupplyBuildpacks() error {
 	for _, buildpack := range runner.config.SupplyBuildpacks() {
 		buildpackPath, err := runner.buildpackPath(buildpack)
 		if err != nil {
-			printError(err.Error())
+			logError(err.Error())
 			return NewDescriptiveError(err, SupplyFailMsg)
 		}
 
@@ -380,7 +381,7 @@ func (runner *Runner) runFinalize(buildpackPath string) error {
 		}
 	} else {
 		if len(runner.config.SupplyBuildpacks()) > 0 {
-			printError(MissingFinalizeWarnMsg)
+			logError(MissingFinalizeWarnMsg)
 		}
 
 		// remove unused deps sub dir
@@ -389,7 +390,8 @@ func (runner *Runner) runFinalize(buildpackPath string) error {
 		}
 
 		if err := runner.run(exec.Command(filepath.Join(buildpackPath, "bin", "compile"), runner.config.BuildDir, cacheDir), os.Stdout); err != nil {
-			return NewDescriptiveError(err, CompileFailMsg)
+			println(err.Error())
+			return NewDescriptiveError(errors.New(fmt.Sprintf("%s %s", "Failed to compile droplet", err.Error())), CompileFailMsg)
 		}
 	}
 
@@ -402,7 +404,7 @@ func (runner *Runner) detect() (string, string, string, bool) {
 
 		buildpackPath, err := runner.buildpackPath(buildpack)
 		if err != nil {
-			printError(err.Error())
+			logError(err.Error())
 			continue
 		}
 
@@ -411,7 +413,7 @@ func (runner *Runner) detect() (string, string, string, bool) {
 		}
 
 		if err := runner.warnIfDetectNotExecutable(buildpackPath); err != nil {
-			printError(err.Error())
+			logError(err.Error())
 			continue
 		}
 
@@ -476,7 +478,7 @@ func (runner *Runner) release(buildpackDir string, startCommands map[string]stri
 	return parsedRelease, nil
 }
 
-func (runner *Runner) saveInfo(infoFilePath string, buildpacks []BuildpackMetadata, releaseInfo Release) error {
+func (runner *Runner) saveInfo(buildpacks []BuildpackMetadata, releaseInfo Release) error {
 	var lastBuildpack BuildpackMetadata
 	if len(buildpacks) > 0 {
 		lastBuildpack = buildpacks[len(buildpacks)-1]
@@ -510,6 +512,6 @@ func (runner *Runner) run(cmd *exec.Cmd, output io.Writer) error {
 	return cmd.Run()
 }
 
-func printError(message string) {
-	fmt.Fprintln(os.Stderr, message)
+func logError(message string) {
+	log.Println(message)
 }

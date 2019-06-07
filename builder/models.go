@@ -15,13 +15,12 @@ const (
 	MissingFinalizeWarnMsg = "Warning: the last buildpack is not compatible with multi-buildpack apps and cannot make use of any dependencies supplied by the buildpacks specified before it"
 	FinalizeFailMsg        = "Failed to run finalize script"
 
-	SystemFailCode        = 1
-	DetectFailCode        = 222
-	CompileFailCode       = 223
-	ReleaseFailCode       = 224
-	SupplyFailCode        = 225
-	NoSupplyScriptFaiCode = 226
-	FinalizeFailCode      = 227
+	SystemFailCode   = 1
+	DetectFailCode   = 222
+	CompileFailCode  = 223
+	ReleaseFailCode  = 224
+	SupplyFailCode   = 225
+	FinalizeFailCode = 227
 )
 
 type ProcessTypes map[string]string
@@ -83,10 +82,8 @@ func NewDescriptiveError(err error, msg string, args ...interface{}) error {
 		exitCode = CompileFailCode
 	case ReleaseFailMsg:
 		exitCode = ReleaseFailCode
-	case SupplyFailMsg:
+	case SupplyFailMsg, NoSupplyScriptFailMsg:
 		exitCode = SupplyFailCode
-	case NoSupplyScriptFailMsg:
-		exitCode = NoSupplyScriptFaiCode
 	case FinalizeFailMsg:
 		exitCode = FinalizeFailCode
 	default:

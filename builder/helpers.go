@@ -1,7 +1,7 @@
 package builder
 
 import (
-	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -26,46 +26,16 @@ func (runner *Runner) warnIfDetectNotExecutable(buildpackPath string) error {
 	}
 
 	if fileInfo.Mode()&0111 != 0111 {
-		fmt.Println("WARNING: buildpack script '/bin/detect' is not executable")
+		log.Println("WARNING: buildpack script '/bin/detect' is not executable")
 	}
 
 	return nil
 }
 
-// StringifyBuildpack converts a buildpack's fields to all strings: the format expected by the buildpackapplifecycle.
-// func StringifyBuildpack(buildpack builder.Buildpack) StringifiedBuildpack {
-//
-// 	skipDetect := ""
-// 	if buildpack.SkipDetect != nil {
-// 		skipDetect = strconv.FormatBool(*buildpack.SkipDetect)
-// 	}
-//
-// 	return StringifiedBuildpack{
-// 		Name:       buildpack.Name,
-// 		Key:        buildpack.Key,
-// 		URL:        buildpack.URL,
-// 		SkipDetect: skipDetect,
-// 	}
-// }
-//
-// // UnStringifyBuildpack converts a stringifyBuildpack back to its original self.
-// func UnStringifyBuildpack(buildpack StringifiedBuildpack) (*builder.Buildpack, error) {
-//
-// 	var skipDetect *bool
-//
-// 	if buildpack.SkipDetect != "" {
-// 		detect, err := strconv.ParseBool(buildpack.SkipDetect)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-//
-// 		skipDetect = &detect
-// 	}
-//
-// 	return &builder.Buildpack{
-// 		Name:       buildpack.Name,
-// 		Key:        buildpack.Key,
-// 		URL:        buildpack.URL,
-// 		SkipDetect: skipDetect,
-// 	}, nil
-// }
+func (runner *Runner) findTar() (string, error) {
+	tarPath, err := exec.LookPath("tar")
+	if err != nil {
+		return "", err
+	}
+	return tarPath, nil
+}

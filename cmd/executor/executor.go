@@ -11,6 +11,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	ExitReason = "failed to create droplet"
+)
+
 func main() {
 	log.Println("executor-started")
 	defer log.Println("executor-done")
@@ -39,10 +43,10 @@ func main() {
 		outputMetadataLocation = eirinistaging.RecipeOutputMetadataLocation
 	}
 
-	packsBuilderPath, ok := os.LookupEnv(eirinistaging.EnvPacksBuilderPath)
-	if !ok {
-		packsBuilderPath = eirinistaging.RecipePacksBuilderPath
-	}
+	// packsBuilderPath, ok := os.LookupEnv(eirinistaging.EnvPacksBuilderPath)
+	// if !ok {
+	// 	packsBuilderPath = eirinistaging.RecipePacksBuilderPath
+	// }
 
 	downloadDir, ok := os.LookupEnv(eirinistaging.EnvWorkspaceDir)
 	if !ok {
@@ -51,38 +55,29 @@ func main() {
 
 	responder := eirinistaging.NewResponder(stagingGUID, completionCallback, eiriniAddress)
 
-	// commander := &eirinistaging.IOCommander{
-	// 	Stdout: os.Stdout,
-	// 	Stderr: os.Stderr,
-	// 	Stdin:  os.Stdin,
-	// }
-
-	exitReason := "failed to create droplet"
 	exitCode := 1
 
 	buildDir, err := extract(downloadDir)
 	if err != nil {
-		responder.RespondWithFailure(errors.Wrap(err, exitReason))
+		responder.RespondWithFailure(errors.Wrap(err, ExitReason))
 		os.Exit(exitCode)
 	}
 	defer cleanup(buildDir)
 
 	buildConfig, err := builder.Config{
 		BuildDir:                  buildDir,
-		PacksBuilderPath:          packsBuilderPath,
 		BuildpacksDir:             buildpacksDir,
 		OutputDropletLocation:     outputDropletLocation,
 		OutputBuildArtifactsCache: outputBuildArtifactsCache,
 		OutputMetadataLocation:    outputMetadataLocation,
-	}.Init(downloadDir, buildpackCfg)
+	}.Init(buildpackCfg)
 	if err != nil {
-		responder.RespondWithFailure(errors.Wrap(err, exitReason))
+		responder.RespondWithFailure(errors.Wrap(err, ExitReason))
 		os.Exit(exitCode)
 	}
 
 	executor := &eirinistaging.PacksExecutor{
 		Conf: &buildConfig,
-		// Commander: commander,
 	}
 
 	err = executor.ExecuteRecipe()
@@ -91,7 +86,7 @@ func main() {
 		if withExitCode, ok := err.(builder.DescriptiveError); ok {
 			exitCode = withExitCode.ExitCode
 		}
-		responder.RespondWithFailure(errors.Wrap(err, exitReason))
+		responder.RespondWithFailure(errors.Wrap(err, ExitReason))
 		os.Exit(exitCode)
 	}
 }

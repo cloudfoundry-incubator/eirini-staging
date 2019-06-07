@@ -10,18 +10,15 @@ import (
 
 type Config struct {
 	BuildDir                  string
-	PacksBuilderPath          string
 	BuildpacksDir             string
 	OutputDropletLocation     string
 	OutputBuildArtifactsCache string
 	OutputMetadataLocation    string
 	BuildpackOrder            []string
 	SkipDetect                bool
-
-	BuildpacksDownloadDir string
 }
 
-func (s Config) Init(downloadDir, buildpacksJSON string) (Config, error) {
+func (s Config) Init(buildpacksJSON string) (Config, error) {
 	if buildpacksJSON != "" {
 		var buildpacks []Buildpack
 		err := json.Unmarshal([]byte(buildpacksJSON), &buildpacks)
