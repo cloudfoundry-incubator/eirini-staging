@@ -4,8 +4,6 @@ code.cloudfoundry.org/archiver/extractor/test_helper
 code.cloudfoundry.org/bbs/models
 code.cloudfoundry.org/bbs/format
 code.cloudfoundry.org/bbs/encryption
-# code.cloudfoundry.org/buildpackapplifecycle v0.0.0-20190221201359-5a0eeb8db891
-code.cloudfoundry.org/buildpackapplifecycle
 # code.cloudfoundry.org/lager v2.0.0+incompatible
 code.cloudfoundry.org/lager
 # code.cloudfoundry.org/runtimeschema v0.0.0-20180622184205-c38d8be9f68c

@@ -61,9 +61,5 @@ func (s Config) DepsIndex(i int) string {
 
 func (s Config) BuildpackPath(buildpackName string) string {
 	baseDir := s.BuildpacksDir
-	// buildpackURL, err := url.Parse(buildpackName)
-	// if err == nil && buildpackURL.IsAbs() {
-	// 	baseDir = s.BuildpacksDownloadDir()
-	// }
 	return filepath.Join(baseDir, fmt.Sprintf("%x", md5.Sum([]byte(buildpackName))))
 }

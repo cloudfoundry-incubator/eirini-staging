@@ -41,11 +41,6 @@ func (runner *Runner) Run() error {
 		return NewDescriptiveError(err, "Failed to set up filesystem when generating droplet")
 	}
 
-	// err = runner.downloadBuildpacks()
-	// if err != nil {
-	// 	return "", err
-	// }
-
 	//detect, compile, release
 	err = runner.cleanCacheDir()
 	if err != nil {
@@ -203,39 +198,6 @@ func (runner *Runner) makeDirectories() error {
 
 	return nil
 }
-
-// func (runner *Runner) downloadBuildpacks() error {
-// 	// Do we have a custom buildpack?
-// 	for _, buildpackName := range runner.config.BuildpackOrder {
-// 		buildpackURL, err := url.Parse(buildpackName)
-// 		if err != nil {
-// 			return fmt.Errorf("Invalid buildpack url (%s): %s", buildpackName, err.Error())
-// 		}
-// 		if !buildpackURL.IsAbs() {
-// 			continue
-// 		}
-//
-// 		destination := runner.config.BuildpackPath(buildpackName)
-//
-// 		var downloadErr error
-// 		if IsZipFile(buildpackURL.Path) {
-// 			var size uint64
-//
-// 			zipDownloader := NewZipDownloader(runner.config.SkipCertVerify())
-// 			size, downloadErr = zipDownloader.DownloadAndExtract(buildpackURL, destination)
-// 			if downloadErr == nil {
-// 				log.Printf("Downloaded buildpack `%s` (%s)\n", buildpackURL.String(), bytefmt.ByteSize(size))
-// 			}
-// 		} else {
-// 			downloadErr = GitClone(*buildpackURL, destination)
-// 		}
-// 		if downloadErr != nil {
-// 			return downloadErr
-// 		}
-// 	}
-//
-// 	return nil
-// }
 
 func (runner *Runner) cleanCacheDir() error {
 	neededCacheDirs := map[string]bool{

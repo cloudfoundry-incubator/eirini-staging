@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	bap "code.cloudfoundry.org/buildpackapplifecycle"
+	"code.cloudfoundry.org/eirini-staging/builder"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 )
 
@@ -12,24 +12,24 @@ type BuildpacksKeyModifier struct {
 	CCBuildpacksJSON string
 }
 
-func (m *BuildpacksKeyModifier) Modify(result bap.StagingResult) (bap.StagingResult, error) {
+func (m *BuildpacksKeyModifier) Modify(result builder.StagingResult) (builder.StagingResult, error) {
 	buildpacks, err := m.getProvidedBuildpacks()
 	if err != nil {
-		return bap.StagingResult{}, err
+		return builder.StagingResult{}, err
 	}
 
 	if err := m.modifyBuildpackKey(&result, buildpacks); err != nil {
-		return bap.StagingResult{}, err
+		return builder.StagingResult{}, err
 	}
 
 	if err := m.modifyBuildpacks(&result, buildpacks); err != nil {
-		return bap.StagingResult{}, err
+		return builder.StagingResult{}, err
 	}
 
 	return result, nil
 }
 
-func (m *BuildpacksKeyModifier) modifyBuildpackKey(result *bap.StagingResult, buildpacks []cc_messages.Buildpack) error {
+func (m *BuildpacksKeyModifier) modifyBuildpackKey(result *builder.StagingResult, buildpacks []cc_messages.Buildpack) error {
 	name := result.LifecycleMetadata.BuildpackKey
 	key, err := m.getBuildpackKey(name, buildpacks)
 	if err != nil {
@@ -40,7 +40,7 @@ func (m *BuildpacksKeyModifier) modifyBuildpackKey(result *bap.StagingResult, bu
 	return nil
 }
 
-func (m *BuildpacksKeyModifier) modifyBuildpacks(result *bap.StagingResult, buildpacks []cc_messages.Buildpack) error {
+func (m *BuildpacksKeyModifier) modifyBuildpacks(result *builder.StagingResult, buildpacks []cc_messages.Buildpack) error {
 	for i, b := range result.LifecycleMetadata.Buildpacks {
 		modified, err := m.modifyBuildpackMetadata(b, buildpacks)
 		if err != nil {
@@ -53,11 +53,11 @@ func (m *BuildpacksKeyModifier) modifyBuildpacks(result *bap.StagingResult, buil
 	return nil
 }
 
-func (m *BuildpacksKeyModifier) modifyBuildpackMetadata(b bap.BuildpackMetadata, buildpacks []cc_messages.Buildpack) (bap.BuildpackMetadata, error) {
+func (m *BuildpacksKeyModifier) modifyBuildpackMetadata(b builder.BuildpackMetadata, buildpacks []cc_messages.Buildpack) (builder.BuildpackMetadata, error) {
 	name := b.Key
 	key, err := m.getBuildpackKey(name, buildpacks)
 	if err != nil {
-		return bap.BuildpackMetadata{}, err
+		return builder.BuildpackMetadata{}, err
 	}
 	b.Key = key
 	return b, nil
