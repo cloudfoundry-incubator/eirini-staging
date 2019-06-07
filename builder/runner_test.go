@@ -84,8 +84,7 @@ var _ = Describe("Building", func() {
 
 	AfterEach(func() {
 		pr.Close()
-		err := runner.CleanUp()
-		Expect(err).NotTo(HaveOccurred())
+		runner.CleanUp()
 
 		Expect(os.RemoveAll(tmpDir)).To(Succeed())
 	})
