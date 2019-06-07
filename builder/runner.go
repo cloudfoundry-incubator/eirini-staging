@@ -13,12 +13,9 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"time"
 
 	yaml "gopkg.in/yaml.v2"
 )
-
-const DOWNLOAD_TIMEOUT = 10 * time.Minute
 
 type Runner struct {
 	config      *Config
@@ -70,7 +67,7 @@ func (runner *Runner) Run() error {
 		}
 	}
 
-	if err := runner.runFinalize(detectedBuildpackDir); err != nil {
+	if err = runner.runFinalize(detectedBuildpackDir); err != nil {
 		return err
 	}
 
@@ -81,7 +78,7 @@ func (runner *Runner) Run() error {
 
 	releaseInfo, err := runner.release(detectedBuildpackDir, startCommands)
 	if err != nil {
-		return NewDescriptiveError(errors.New(fmt.Sprintf("%s %s", "Failed to build droplet release", err.Error())), ReleaseFailMsg)
+		return NewDescriptiveError(fmt.Errorf("%s %s", "Failed to build droplet release", err.Error()), ReleaseFailMsg)
 	}
 
 	if releaseInfo.DefaultProcessTypes["web"] == "" {
@@ -111,7 +108,7 @@ func (runner *Runner) Run() error {
 	}
 
 	for _, name := range []string{"tmp", "logs"} {
-		if err := os.MkdirAll(filepath.Join(runner.contentsDir, name), 0755); err != nil {
+		if err = os.MkdirAll(filepath.Join(runner.contentsDir, name), 0755); err != nil {
 			return NewDescriptiveError(err, "Failed to set up droplet filesystem")
 		}
 	}
@@ -391,7 +388,7 @@ func (runner *Runner) runFinalize(buildpackPath string) error {
 
 		if err := runner.run(exec.Command(filepath.Join(buildpackPath, "bin", "compile"), runner.config.BuildDir, cacheDir), os.Stdout); err != nil {
 			println(err.Error())
-			return NewDescriptiveError(errors.New(fmt.Sprintf("%s %s", "Failed to compile droplet", err.Error())), CompileFailMsg)
+			return NewDescriptiveError(fmt.Errorf("%s %s", "Failed to compile droplet", err.Error()), CompileFailMsg)
 		}
 	}
 
@@ -412,7 +409,7 @@ func (runner *Runner) detect() (string, string, string, bool) {
 			return buildpack, buildpackPath, "", true
 		}
 
-		if err := runner.warnIfDetectNotExecutable(buildpackPath); err != nil {
+		if err = runner.warnIfDetectNotExecutable(buildpackPath); err != nil {
 			logError(err.Error())
 			continue
 		}

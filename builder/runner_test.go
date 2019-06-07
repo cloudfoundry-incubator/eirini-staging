@@ -54,6 +54,8 @@ var _ = Describe("Building", func() {
 		pr, pw = io.Pipe()
 
 		tmpDir, err = ioutil.TempDir("", "building-tmp")
+		Expect(err).NotTo(HaveOccurred())
+
 		buildDir, err = ioutil.TempDir(tmpDir, "building-app")
 		Expect(err).NotTo(HaveOccurred())
 
@@ -82,7 +84,8 @@ var _ = Describe("Building", func() {
 
 	AfterEach(func() {
 		pr.Close()
-		runner.CleanUp()
+		err := runner.CleanUp()
+		Expect(err).NotTo(HaveOccurred())
 
 		Expect(os.RemoveAll(tmpDir)).To(Succeed())
 	})
@@ -888,16 +891,6 @@ func removeTrailingSpace(dirty []string) []string {
 func cp(src string, dst string) {
 	session, err := gexec.Start(
 		exec.Command("cp", "-a", src, dst),
-		GinkgoWriter,
-		GinkgoWriter,
-	)
-	Expect(err).NotTo(HaveOccurred())
-	Eventually(session).Should(gexec.Exit(0))
-}
-
-func cat(src string) {
-	session, err := gexec.Start(
-		exec.Command("cat", src),
 		GinkgoWriter,
 		GinkgoWriter,
 	)

@@ -74,7 +74,8 @@ func (e DescriptiveError) Error() string {
 }
 
 func NewDescriptiveError(err error, msg string, args ...interface{}) error {
-	exitCode := SystemFailCode
+	var exitCode int
+
 	switch msg {
 	case DetectFailMsg:
 		exitCode = DetectFailCode
