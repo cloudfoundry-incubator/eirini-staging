@@ -54,6 +54,8 @@ var _ = Describe("Building", func() {
 		pr, pw = io.Pipe()
 
 		tmpDir, err = ioutil.TempDir("", "building-tmp")
+		Expect(err).NotTo(HaveOccurred())
+
 		buildDir, err = ioutil.TempDir(tmpDir, "building-app")
 		Expect(err).NotTo(HaveOccurred())
 
@@ -82,7 +84,8 @@ var _ = Describe("Building", func() {
 
 	AfterEach(func() {
 		pr.Close()
-		runner.CleanUp()
+		err := runner.CleanUp()
+		Expect(err).NotTo(HaveOccurred())
 
 		Expect(os.RemoveAll(tmpDir)).To(Succeed())
 	})
@@ -138,7 +141,7 @@ var _ = Describe("Building", func() {
 			JustBeforeEach(func() {
 				go func() {
 					log.SetOutput(pw)
-					runner.Run()
+					_ = runner.Run()
 					pw.Close()
 				}()
 			})
@@ -148,7 +151,9 @@ var _ = Describe("Building", func() {
 			})
 
 			It("should have chosen the second buildpack detect", func() {
-				ioutil.ReadAll(pr)
+				_, err := ioutil.ReadAll(pr)
+				Expect(err).NotTo(HaveOccurred())
+
 				data := &struct {
 					LifeCycle struct {
 						Key string `json:"buildpack_key"`
@@ -455,7 +460,9 @@ var _ = Describe("Building", func() {
 		JustBeforeEach(func() {
 			go func() {
 				log.SetOutput(pw)
-				runner.Run()
+				defer GinkgoRecover()
+				err = runner.Run()
+				Expect(err).NotTo(HaveOccurred())
 				pw.Close()
 			}()
 
@@ -615,7 +622,9 @@ var _ = Describe("Building", func() {
 		JustBeforeEach(func() {
 			go func() {
 				log.SetOutput(pw)
-				runner.Run()
+				defer GinkgoRecover()
+				err = runner.Run()
+				Expect(err).NotTo(HaveOccurred())
 				pw.Close()
 			}()
 
@@ -783,7 +792,9 @@ var _ = Describe("Building", func() {
 		JustBeforeEach(func() {
 			go func() {
 				log.SetOutput(pw)
-				runner.Run()
+				defer GinkgoRecover()
+				err := runner.Run()
+				Expect(err).NotTo(HaveOccurred())
 				pw.Close()
 			}()
 		})
@@ -888,16 +899,6 @@ func removeTrailingSpace(dirty []string) []string {
 func cp(src string, dst string) {
 	session, err := gexec.Start(
 		exec.Command("cp", "-a", src, dst),
-		GinkgoWriter,
-		GinkgoWriter,
-	)
-	Expect(err).NotTo(HaveOccurred())
-	Eventually(session).Should(gexec.Exit(0))
-}
-
-func cat(src string) {
-	session, err := gexec.Start(
-		exec.Command("cat", src),
 		GinkgoWriter,
 		GinkgoWriter,
 	)

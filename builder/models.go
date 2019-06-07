@@ -10,6 +10,7 @@ const (
 	CompileFailMsg = "BuildpackCompileFailed"
 	ReleaseFailMsg = "BuildpackReleaseFailed"
 
+	FullDetectFailMsg      = "None of the buildpacks detected a compatible application"
 	SupplyFailMsg          = "Failed to run all supply scripts"
 	NoSupplyScriptFailMsg  = "Error: one of the buildpacks chosen to supply dependencies does not support multi-buildpack apps"
 	MissingFinalizeWarnMsg = "Warning: the last buildpack is not compatible with multi-buildpack apps and cannot make use of any dependencies supplied by the buildpacks specified before it"
@@ -74,7 +75,8 @@ func (e DescriptiveError) Error() string {
 }
 
 func NewDescriptiveError(err error, msg string, args ...interface{}) error {
-	exitCode := SystemFailCode
+	var exitCode int
+
 	switch msg {
 	case DetectFailMsg:
 		exitCode = DetectFailCode
