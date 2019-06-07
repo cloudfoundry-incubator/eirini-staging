@@ -95,6 +95,7 @@ var _ = Describe("Building", func() {
 			OutputBuildArtifactsCache: outputBuildArtifactsCache,
 			OutputMetadataLocation:    outputMetadata,
 			BuildpackOrder:            strings.Split(buildpackOrder, ","),
+			BuildArtifactsCache:       "/tmp/cache",
 			SkipDetect:                skipDetect,
 		}
 

@@ -16,6 +16,7 @@ type Config struct {
 	OutputMetadataLocation    string
 	BuildpackOrder            []string
 	SkipDetect                bool
+	BuildArtifactsCache       string
 }
 
 func (s Config) Init(buildpacksJSON string) (Config, error) {
@@ -40,7 +41,7 @@ func (s Config) Init(buildpacksJSON string) (Config, error) {
 }
 
 func (s Config) BuildArtifactsCacheDir() string {
-	return "/tmp/cache"
+	return s.BuildArtifactsCache
 }
 
 func (s Config) SupplyBuildpacks() []string {

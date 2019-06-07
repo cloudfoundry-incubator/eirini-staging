@@ -43,10 +43,10 @@ func main() {
 		outputMetadataLocation = eirinistaging.RecipeOutputMetadataLocation
 	}
 
-	// packsBuilderPath, ok := os.LookupEnv(eirinistaging.EnvPacksBuilderPath)
-	// if !ok {
-	// 	packsBuilderPath = eirinistaging.RecipePacksBuilderPath
-	// }
+	cacheDir, ok := os.LookupEnv(eirinistaging.EnvBuildArtifactsCacheDir)
+	if !ok {
+		cacheDir = eirinistaging.BuildArtifactsCacheDir
+	}
 
 	downloadDir, ok := os.LookupEnv(eirinistaging.EnvWorkspaceDir)
 	if !ok {
@@ -70,6 +70,7 @@ func main() {
 		OutputDropletLocation:     outputDropletLocation,
 		OutputBuildArtifactsCache: outputBuildArtifactsCache,
 		OutputMetadataLocation:    outputMetadataLocation,
+		BuildArtifactsCache:       cacheDir,
 	}.Init(buildpackCfg)
 	if err != nil {
 		responder.RespondWithFailure(errors.Wrap(err, ExitReason))
