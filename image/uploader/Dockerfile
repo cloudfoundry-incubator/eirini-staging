@@ -3,7 +3,7 @@ WORKDIR /go/src/code.cloudfoundry.org/eirini-staging
 COPY . .
 RUN GOOS=linux go build -a -o /uploader cmd/uploader/uploader.go
 
-FROM eirinistaging/cf
+FROM cloudfoundry/cflinuxfs3
 
 WORKDIR /workspace
 

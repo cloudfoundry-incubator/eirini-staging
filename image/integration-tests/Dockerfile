@@ -1,4 +1,4 @@
-FROM eirinistaging/cf
+FROM cloudfoundry/cflinuxfs3
 
 # Install Golang
 ENV GOLANG_VERSION 1.12
