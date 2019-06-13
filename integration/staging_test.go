@@ -71,7 +71,7 @@ var _ = Describe("StagingText", func() {
 		err = os.Setenv(eirinistaging.EnvOutputMetadataLocation, path.Join(outputDir, "result.json"))
 		Expect(err).NotTo(HaveOccurred())
 
-		err = os.Setenv(eirinistaging.CFSTACK, eirinistaging.DefaultCFStack)
+		err = os.Setenv("CF_STACK", "cflinuxfs2")
 		Expect(err).NotTo(HaveOccurred())
 
 		err = chownR(outputDir, "vcap", "vcap")
@@ -128,7 +128,7 @@ var _ = Describe("StagingText", func() {
 		err = os.RemoveAll(cacheDir)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = os.Unsetenv(eirinistaging.DefaultCFStack)
+		err = os.Unsetenv("cflinuxfs2")
 		Expect(err).ToNot(HaveOccurred())
 		err = os.Unsetenv(eirinistaging.EnvCertsPath)
 		Expect(err).ToNot(HaveOccurred())
