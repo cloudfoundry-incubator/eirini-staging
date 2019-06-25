@@ -32,7 +32,7 @@ var _ = Describe("BuildpackManager", func() {
 
 		JustBeforeEach(func() {
 			expectedBytes = []byte(responseContent)
-			actualBytes, err = eirinistaging.OpenBuildpackURL(&buildpack, client)
+			actualBytes, err = eirinistaging.OpenBuildpackURL(buildpack.URL, client)
 		})
 
 		Context("and it is a valid URL", func() {

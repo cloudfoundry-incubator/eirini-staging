@@ -41,11 +41,11 @@ var _ = Describe("Buildpackmanager", func() {
 		server = ghttp.NewServer()
 		server.AppendHandlers(
 			ghttp.CombineHandlers(
-				ghttp.VerifyRequest("GET", "/my-buildpack"),
+				ghttp.VerifyRequest("GET", "/my-buildpack.zip"),
 				ghttp.RespondWith(http.StatusOK, responseContent),
 			),
 			ghttp.CombineHandlers(
-				ghttp.VerifyRequest("GET", "/your-buildpack"),
+				ghttp.VerifyRequest("GET", "/your-buildpack.zip"),
 				ghttp.RespondWith(http.StatusOK, responseContent),
 			),
 		)
@@ -66,12 +66,12 @@ var _ = Describe("Buildpackmanager", func() {
 				{
 					Name: "my_buildpack",
 					Key:  "my-key",
-					URL:  fmt.Sprintf("%s/my-buildpack", server.URL()),
+					URL:  fmt.Sprintf("%s/my-buildpack.zip", server.URL()),
 				},
 				{
 					Name: "your_buildpack",
 					Key:  "your-key",
-					URL:  fmt.Sprintf("%s/your-buildpack", server.URL()),
+					URL:  fmt.Sprintf("%s/your-buildpack.zip", server.URL()),
 				},
 			}
 		})
@@ -109,7 +109,7 @@ var _ = Describe("Buildpackmanager", func() {
 				{
 					Name:       "my_buildpack",
 					Key:        "my-key",
-					URL:        fmt.Sprintf("%s/my-buildpack", server.URL()),
+					URL:        fmt.Sprintf("%s/my-buildpack.zip", server.URL()),
 					SkipDetect: true,
 				},
 			}
@@ -145,11 +145,11 @@ var _ = Describe("Buildpackmanager", func() {
 			server = ghttp.NewServer()
 			server.AppendHandlers(
 				ghttp.CombineHandlers(
-					ghttp.VerifyRequest("GET", "/bad-buildpack"),
+					ghttp.VerifyRequest("GET", "/bad-buildpack.zip"),
 					ghttp.RespondWith(http.StatusInternalServerError, responseContent),
 				),
 				ghttp.CombineHandlers(
-					ghttp.VerifyRequest("GET", "/bad-buildpack"),
+					ghttp.VerifyRequest("GET", "/bad-buildpack.zip"),
 					ghttp.RespondWith(http.StatusInternalServerError, responseContent),
 				),
 			)
@@ -158,7 +158,7 @@ var _ = Describe("Buildpackmanager", func() {
 				{
 					Name: "bad_buildpack",
 					Key:  "bad-key",
-					URL:  fmt.Sprintf("%s/bad-buildpack", server.URL()),
+					URL:  fmt.Sprintf("%s/bad-buildpack.zip", server.URL()),
 				},
 			}
 		})

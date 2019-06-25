@@ -1,7 +1,6 @@
 package eirinistaging
 
 import (
-	"crypto/md5"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -24,8 +23,8 @@ type BuildpackManager struct {
 
 const configFileName = "config.json"
 
-func OpenBuildpackURL(buildpack *builder.Buildpack, client *http.Client) ([]byte, error) {
-	resp, err := client.Get(buildpack.URL)
+func OpenBuildpackURL(buildpackURL string, client *http.Client) ([]byte, error) {
+	resp, err := client.Get(buildpackURL)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to request buildpack")
 	}
@@ -70,23 +69,30 @@ func (b *BuildpackManager) Install() error {
 }
 
 func (b *BuildpackManager) install(buildpack builder.Buildpack) (err error) {
-	var bytes []byte
-	bytes, err = OpenBuildpackURL(&buildpack, b.internalClient)
+	destination := builder.BuildpackPath(b.buildpackDir, buildpack.Name)
+	if builder.IsZipFile(buildpack.URL) {
+		return b.installFromArchive(buildpack, destination)
+	}
+
+	return nil
+}
+
+func (b *BuildpackManager) installFromArchive(buildpack builder.Buildpack, buildpackPath string) error {
+	tmpDir, err := ioutil.TempDir("", "buildpacks")
+	if err != nil {
+		return err
+	}
+
+	bytes, err := OpenBuildpackURL(buildpack.URL, b.internalClient)
 	if err != nil {
 		var err2 error
-		bytes, err2 = OpenBuildpackURL(&buildpack, b.defaultClient)
+		bytes, err2 = OpenBuildpackURL(buildpack.URL, b.defaultClient)
 		if err2 != nil {
 			return errors.Wrap(err, fmt.Sprintf("default client also failed: %s", err2.Error()))
 		}
 	}
 
-	var tempDirName string
-	tempDirName, err = ioutil.TempDir("", "buildpacks")
-	if err != nil {
-		return err
-	}
-
-	fileName := filepath.Join(tempDirName, fmt.Sprintf("buildback-%d-.zip", time.Now().Nanosecond()))
+	fileName := filepath.Join(tmpDir, fmt.Sprintf("buildback-%d-.zip", time.Now().Nanosecond()))
 	defer func() {
 		err = os.Remove(fileName)
 	}()
@@ -96,8 +102,6 @@ func (b *BuildpackManager) install(buildpack builder.Buildpack) (err error) {
 		return err
 	}
 
-	buildpackName := fmt.Sprintf("%x", md5.Sum([]byte(buildpack.Name)))
-	buildpackPath := filepath.Join(b.buildpackDir, buildpackName)
 	err = os.MkdirAll(buildpackPath, 0777)
 	if err != nil {
 		return err

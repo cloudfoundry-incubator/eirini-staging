@@ -1,11 +1,9 @@
 package builder
 
 import (
-	"crypto/md5"
 	"encoding/json"
 	"fmt"
 	"math"
-	"path/filepath"
 )
 
 type Config struct {
@@ -77,9 +75,4 @@ func (s Config) DepsIndex(i int) string {
 	padDigits := int(math.Log10(float64(numBuildpacks))) + 1
 	indexFormat := fmt.Sprintf("%%0%dd", padDigits)
 	return fmt.Sprintf(indexFormat, i)
-}
-
-func (s Config) BuildpackPath(buildpackName string) string {
-	baseDir := s.BuildpacksDir
-	return filepath.Join(baseDir, fmt.Sprintf("%x", md5.Sum([]byte(buildpackName))))
 }

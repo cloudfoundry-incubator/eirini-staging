@@ -226,7 +226,7 @@ func (runner *Runner) cleanCacheDir() error {
 }
 
 func (runner *Runner) buildpackPath(buildpack string) (string, error) {
-	buildpackPath := runner.config.BuildpackPath(buildpack)
+	buildpackPath := BuildpackPath(runner.config.BuildpacksDir, buildpack)
 
 	if runner.pathHasBinDirectory(buildpackPath) {
 		return buildpackPath, nil
@@ -268,7 +268,6 @@ func fileExists(file string) (bool, error) {
 	return true, nil
 }
 
-// returns buildpack path, ok
 func (runner *Runner) runSupplyBuildpacks() (string, []BuildpackMetadata, error) {
 	if err := runner.validateSupplyBuildpacks(); err != nil {
 		return "", nil, err
@@ -357,7 +356,6 @@ func (runner *Runner) runFinalize(buildpackPath string) error {
 	return nil
 }
 
-// returns buildpack path and metadata
 func (runner *Runner) detect() (string, []BuildpackMetadata, error) {
 	for _, buildpack := range runner.config.BuildpackOrder {
 		buildpackPath, err := runner.buildpackPath(buildpack)
@@ -481,6 +479,27 @@ func (runner *Runner) run(cmd *exec.Cmd, output io.Writer) error {
 	return cmd.Run()
 }
 
-func logError(message string) {
-	log.Println(message)
+func (runner *Runner) copyApp(buildDir, stageDir string) error {
+	return runner.run(exec.Command("cp", "-a", buildDir, stageDir), os.Stdout)
+}
+
+func (runner *Runner) warnIfDetectNotExecutable(buildpackPath string) error {
+	fileInfo, err := os.Stat(filepath.Join(buildpackPath, "bin", "detect"))
+	if err != nil {
+		return err
+	}
+
+	if fileInfo.Mode()&0111 != 0111 {
+		log.Println("WARNING: buildpack script '/bin/detect' is not executable")
+	}
+
+	return nil
+}
+
+func (runner *Runner) findTar() (string, error) {
+	tarPath, err := exec.LookPath("tar")
+	if err != nil {
+		return "", err
+	}
+	return tarPath, nil
 }
