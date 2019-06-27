@@ -6,6 +6,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"os"
+	"os/exec"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
@@ -166,6 +170,115 @@ var _ = Describe("Buildpackmanager", func() {
 		It("should try both http clients", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError(ContainSubstring("default client also failed")))
+		})
+	})
+
+	Context("when the buildpack url is a git repo", func() {
+		var (
+			tmpDir      string
+			cloneTarget string
+			gitUrl      url.URL
+		)
+
+		BeforeEach(func() {
+			var err error
+			gitPath, err := exec.LookPath("git")
+			Expect(err).NotTo(HaveOccurred())
+
+			tmpDir, err = ioutil.TempDir("", "tmpDir")
+			Expect(err).NotTo(HaveOccurred())
+			gitBuildpackDir := filepath.Join(tmpDir, "fake-buildpack")
+			err = os.MkdirAll(gitBuildpackDir, os.ModePerm)
+			Expect(err).NotTo(HaveOccurred())
+
+			submoduleDir := filepath.Join(tmpDir, "submodule")
+			err = os.MkdirAll(submoduleDir, os.ModePerm)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(os.RemoveAll(filepath.Join(gitBuildpackDir, ".git"))).To(Succeed())
+			execute(gitBuildpackDir, gitPath, "init")
+			execute(gitBuildpackDir, gitPath, "config", "user.email", "you@example.com")
+			execute(gitBuildpackDir, gitPath, "config", "user.name", "your name")
+			writeFile(filepath.Join(gitBuildpackDir, "content"), "some content")
+
+			Expect(os.RemoveAll(filepath.Join(submoduleDir, ".git"))).To(Succeed())
+			execute(submoduleDir, gitPath, "init")
+			execute(submoduleDir, gitPath, "config", "user.email", "you@example.com")
+			execute(submoduleDir, gitPath, "config", "user.name", "your name")
+			writeFile(filepath.Join(submoduleDir, "README"), "1st commit")
+			execute(submoduleDir, gitPath, "add", ".")
+			execute(submoduleDir, gitPath, "commit", "-am", "first commit")
+			writeFile(filepath.Join(submoduleDir, "README"), "2nd commit")
+			execute(submoduleDir, gitPath, "commit", "-am", "second commit")
+
+			execute(gitBuildpackDir, gitPath, "submodule", "add", "file://"+submoduleDir, "sub")
+			execute(gitBuildpackDir+"/sub", gitPath, "checkout", "HEAD^")
+			execute(gitBuildpackDir, gitPath, "add", "-A")
+			execute(gitBuildpackDir, gitPath, "commit", "-m", "fake commit")
+			execute(gitBuildpackDir, gitPath, "commit", "--allow-empty", "-m", "empty commit")
+			execute(gitBuildpackDir, gitPath, "tag", "a_lightweight_tag")
+			execute(gitBuildpackDir, gitPath, "checkout", "-b", "a_branch")
+			execute(gitBuildpackDir+"/sub", gitPath, "checkout", "master")
+			execute(gitBuildpackDir, gitPath, "add", "-A")
+			execute(gitBuildpackDir, gitPath, "commit", "-am", "update submodule")
+			execute(gitBuildpackDir, gitPath, "checkout", "master")
+			execute(gitBuildpackDir, gitPath, "update-server-info")
+
+			httpServer = httptest.NewServer(http.FileServer(http.Dir(tmpDir)))
+
+		})
+
+		AfterEach(func() {
+			os.RemoveAll(cloneTarget)
+			httpServer.Close()
+			Expect(os.RemoveAll(tmpDir)).To(Succeed())
+		})
+
+		Context("with a valid url", func() {
+			BeforeEach(func() {
+				gitUrl = url.URL{
+					Scheme: "http",
+					Host:   httpServer.Listener.Addr().String(),
+					Path:   "/fake-buildpack/.git",
+				}
+
+				buildpacks = []builder.Buildpack{
+					{
+						Name: "buildpack",
+						Key:  "key",
+						URL:  gitUrl.String(),
+					},
+				}
+
+				cloneTarget = builder.BuildpackPath(buildpackDir, buildpacks[0].Name)
+			})
+
+			It("should succeed cloning the buildpack", func() {
+				Expect(err).NotTo(HaveOccurred())
+			})
+		})
+
+		Context("with an invalid url", func() {
+			BeforeEach(func() {
+				gitUrl = url.URL{
+					Scheme: "http",
+					Host:   "invalid.com",
+					Path:   "/invalid/.git",
+				}
+
+				buildpacks = []builder.Buildpack{
+					{
+						Name: "buildpack",
+						Key:  "key",
+						URL:  gitUrl.String(),
+					},
+				}
+			})
+
+			It("should fail cloning the buildpack", func() {
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("Failed to clone git repository at http://invalid.com/invalid/.git"))
+			})
 		})
 	})
 })

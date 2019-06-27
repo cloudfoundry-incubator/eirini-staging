@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"time"
@@ -68,13 +69,18 @@ func (b *BuildpackManager) Install() error {
 	return b.writeBuildpackJSON(buildpacks)
 }
 
-func (b *BuildpackManager) install(buildpack builder.Buildpack) (err error) {
+func (b *BuildpackManager) install(buildpack builder.Buildpack) error {
 	destination := builder.BuildpackPath(b.buildpackDir, buildpack.Name)
 	if builder.IsZipFile(buildpack.URL) {
 		return b.installFromArchive(buildpack, destination)
 	}
 
-	return nil
+	buildpackURL, err := url.Parse(buildpack.URL)
+	if err != nil {
+		return fmt.Errorf("invalid buildpack url (%s): %s", buildpack.URL, err.Error())
+	}
+
+	return GitClone(*buildpackURL, destination)
 }
 
 func (b *BuildpackManager) installFromArchive(buildpack builder.Buildpack, buildpackPath string) error {

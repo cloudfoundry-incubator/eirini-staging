@@ -156,85 +156,30 @@ var _ = Describe("StagingText", func() {
 
 	Context("when a droplet needs building...", func() {
 		Context("download", func() {
-			BeforeEach(func() {
-				appbitBytes, err = ioutil.ReadFile("testdata/dora.zip")
-				Expect(err).NotTo(HaveOccurred())
-
-				buildpackBytes, err = ioutil.ReadFile("testdata/ruby-buildpack-cflinuxfs2-v1.7.35.zip")
-				Expect(err).NotTo(HaveOccurred())
-
-				server.AppendHandlers(
-					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("GET", "/my-buildpack"),
-						ghttp.RespondWith(http.StatusOK, buildpackBytes),
-					),
-					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("GET", "/my-app-bits"),
-						ghttp.RespondWith(http.StatusOK, appbitBytes),
-					),
-				)
-				server.Start()
-
-				err = os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())
-				Expect(err).NotTo(HaveOccurred())
-
-				err = os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))
-				Expect(err).ToNot(HaveOccurred())
-
-				buildpacks = []builder.Buildpack{
-					{
-						Name: "app_buildpack",
-						Key:  "app_buildpack",
-						URL:  urljoiner.Join(server.URL(), "/my-buildpack"),
-					},
-				}
-
-				buildpackJSON, err = json.Marshal(buildpacks)
-				Expect(err).ToNot(HaveOccurred())
-
-				err = os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))
-				Expect(err).ToNot(HaveOccurred())
-
-				err = os.Setenv(eirinistaging.EnvCertsPath, certsPath)
-				Expect(err).ToNot(HaveOccurred())
-			})
-
-			JustBeforeEach(func() {
-				cmd := exec.Command(binaries.DownloaderPath)
-				session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-				Eventually(session).Should(gexec.Exit())
-			})
-
-			It("runs successfully", func() {
-				Expect(session.ExitCode()).To(BeZero())
-			})
-
-			It("installs the buildpack json", func() {
-				expectedFile := filepath.Join(buildpacksDir, "config.json")
-				Expect(expectedFile).To(BeARegularFile())
-			})
-
-			It("installs the buildpack", func() {
-				md5Hash := fmt.Sprintf("%x", md5.Sum([]byte("app_buildpack")))
-				expectedBuildpackPath := path.Join(buildpacksDir, md5Hash)
-				Expect(expectedBuildpackPath).To(BeADirectory())
-			})
-
-			It("places the app bits in the workspace", func() {
-				actualBytes, err = ioutil.ReadFile(path.Join(workspaceDir, eirinistaging.AppBits))
-				Expect(err).NotTo(HaveOccurred())
-				expectedBytes, err = ioutil.ReadFile("testdata/dora.zip")
-				Expect(err).NotTo(HaveOccurred())
-				Expect(actualBytes).To(Equal(expectedBytes))
-			})
-
-			Context("fails", func() {
+			Context("with buildpack as git repo", func() {
 				BeforeEach(func() {
+					appbitBytes, err = ioutil.ReadFile("testdata/dora.zip")
+					Expect(err).NotTo(HaveOccurred())
+
+					server.AppendHandlers(
+						ghttp.CombineHandlers(
+							ghttp.VerifyRequest("GET", "/my-app-bits"),
+							ghttp.RespondWith(http.StatusOK, appbitBytes),
+						),
+					)
+					server.Start()
+
+					err = os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())
+					Expect(err).NotTo(HaveOccurred())
+
+					err = os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))
+					Expect(err).ToNot(HaveOccurred())
+
 					buildpacks = []builder.Buildpack{
 						{
 							Name: "app_buildpack",
 							Key:  "app_buildpack",
-							URL:  "bad-url",
+							URL:  "https://github.com/cloudfoundry/ruby-buildpack",
 						},
 					}
 
@@ -244,20 +189,125 @@ var _ = Describe("StagingText", func() {
 					err = os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))
 					Expect(err).ToNot(HaveOccurred())
 
-					server.SetHandler(0,
+					err = os.Setenv(eirinistaging.EnvCertsPath, certsPath)
+					Expect(err).ToNot(HaveOccurred())
+				})
+
+				JustBeforeEach(func() {
+					cmd := exec.Command(binaries.DownloaderPath)
+					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+					Eventually(session, 10).Should(gexec.Exit())
+				})
+
+				It("runs successfully", func() {
+					Expect(session.ExitCode()).To(BeZero())
+				})
+			})
+
+			Context("with buildpack as zip archive", func() {
+				BeforeEach(func() {
+					appbitBytes, err = ioutil.ReadFile("testdata/dora.zip")
+					Expect(err).NotTo(HaveOccurred())
+
+					buildpackBytes, err = ioutil.ReadFile("testdata/ruby-buildpack-cflinuxfs2-v1.7.35.zip")
+					Expect(err).NotTo(HaveOccurred())
+
+					server.AppendHandlers(
 						ghttp.CombineHandlers(
-							ghttp.VerifyRequest("PUT", responseURL),
-							verifyResponse(true, "failed to request buildpack"),
+							ghttp.VerifyRequest("GET", "/my-buildpack.zip"),
+							ghttp.RespondWith(http.StatusOK, buildpackBytes),
+						),
+						ghttp.CombineHandlers(
+							ghttp.VerifyRequest("GET", "/my-app-bits"),
+							ghttp.RespondWith(http.StatusOK, appbitBytes),
 						),
 					)
+					server.Start()
+
+					err = os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())
+					Expect(err).NotTo(HaveOccurred())
+
+					err = os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))
+					Expect(err).ToNot(HaveOccurred())
+
+					buildpacks = []builder.Buildpack{
+						{
+							Name: "app_buildpack",
+							Key:  "app_buildpack",
+							URL:  urljoiner.Join(server.URL(), "/my-buildpack.zip"),
+						},
+					}
+
+					buildpackJSON, err = json.Marshal(buildpacks)
+					Expect(err).ToNot(HaveOccurred())
+
+					err = os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))
+					Expect(err).ToNot(HaveOccurred())
+
+					err = os.Setenv(eirinistaging.EnvCertsPath, certsPath)
+					Expect(err).ToNot(HaveOccurred())
 				})
 
-				It("should send completion response with a failure", func() {
-					Expect(server.ReceivedRequests()).To(HaveLen(1))
+				JustBeforeEach(func() {
+					cmd := exec.Command(binaries.DownloaderPath)
+					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+					Eventually(session).Should(gexec.Exit())
 				})
 
-				It("should exit with non-zero exit code", func() {
-					Expect(session.ExitCode).NotTo(BeZero())
+				It("runs successfully", func() {
+					Expect(session.ExitCode()).To(BeZero())
+				})
+
+				It("installs the buildpack json", func() {
+					expectedFile := filepath.Join(buildpacksDir, "config.json")
+					Expect(expectedFile).To(BeARegularFile())
+				})
+
+				It("installs the buildpack", func() {
+					md5Hash := fmt.Sprintf("%x", md5.Sum([]byte("app_buildpack")))
+					expectedBuildpackPath := path.Join(buildpacksDir, md5Hash)
+					Expect(expectedBuildpackPath).To(BeADirectory())
+				})
+
+				It("places the app bits in the workspace", func() {
+					actualBytes, err = ioutil.ReadFile(path.Join(workspaceDir, eirinistaging.AppBits))
+					Expect(err).NotTo(HaveOccurred())
+					expectedBytes, err = ioutil.ReadFile("testdata/dora.zip")
+					Expect(err).NotTo(HaveOccurred())
+					Expect(actualBytes).To(Equal(expectedBytes))
+				})
+
+				Context("fails", func() {
+					BeforeEach(func() {
+						buildpacks = []builder.Buildpack{
+							{
+								Name: "app_buildpack",
+								Key:  "app_buildpack",
+								URL:  "bad-url.zip",
+							},
+						}
+
+						buildpackJSON, err = json.Marshal(buildpacks)
+						Expect(err).ToNot(HaveOccurred())
+
+						err = os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))
+						Expect(err).ToNot(HaveOccurred())
+
+						server.SetHandler(0,
+							ghttp.CombineHandlers(
+								ghttp.VerifyRequest("PUT", responseURL),
+								verifyResponse(true, "failed to request buildpack"),
+							),
+						)
+					})
+
+					It("should send completion response with a failure", func() {
+						Expect(server.ReceivedRequests()).To(HaveLen(1))
+					})
+
+					It("should exit with non-zero exit code", func() {
+						Expect(session.ExitCode).NotTo(BeZero())
+					})
 				})
 			})
 		})
@@ -272,7 +322,7 @@ var _ = Describe("StagingText", func() {
 					Expect(err).NotTo(HaveOccurred())
 					server.AppendHandlers(
 						ghttp.CombineHandlers(
-							ghttp.VerifyRequest("GET", "/my-buildpack"),
+							ghttp.VerifyRequest("GET", "/my-buildpack.zip"),
 							ghttp.RespondWith(http.StatusOK, buildpackBytes),
 						),
 						ghttp.CombineHandlers(
@@ -296,7 +346,7 @@ var _ = Describe("StagingText", func() {
 						{
 							Name: "ruby_buildpack",
 							Key:  "ruby_buildpack",
-							URL:  urljoiner.Join(server.URL(), "/my-buildpack"),
+							URL:  urljoiner.Join(server.URL(), "/my-buildpack.zip"),
 						},
 					}
 
@@ -328,6 +378,63 @@ var _ = Describe("StagingText", func() {
 				})
 			})
 
+			Context("when buildpack is a git repo", func() {
+				BeforeEach(func() {
+					appbitBytes, err = ioutil.ReadFile("testdata/dora.zip")
+					Expect(err).NotTo(HaveOccurred())
+
+					server.AppendHandlers(
+						ghttp.CombineHandlers(
+							ghttp.VerifyRequest("GET", "/my-app-bits"),
+							ghttp.RespondWith(http.StatusOK, appbitBytes),
+						),
+					)
+					server.Start()
+
+					err = os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())
+					Expect(err).NotTo(HaveOccurred())
+
+					err = os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))
+					Expect(err).ToNot(HaveOccurred())
+
+					buildpacks = []builder.Buildpack{
+						{
+							Name: "app_buildpack",
+							Key:  "app_buildpack",
+							URL:  "https://github.com/cloudfoundry/ruby-buildpack",
+						},
+					}
+
+					buildpackJSON, err = json.Marshal(buildpacks)
+					Expect(err).ToNot(HaveOccurred())
+
+					err = os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))
+					Expect(err).ToNot(HaveOccurred())
+
+					err = os.Setenv(eirinistaging.EnvCertsPath, certsPath)
+					Expect(err).ToNot(HaveOccurred())
+
+					cmd := exec.Command(binaries.DownloaderPath)
+					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+					Eventually(session, 30).Should(gexec.Exit())
+					Expect(err).NotTo(HaveOccurred())
+
+				})
+
+				JustBeforeEach(func() {
+					cmd := exec.Command(binaries.ExecutorPath)
+					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+					Eventually(session, 600).Should(gexec.Exit())
+				})
+
+				It("should create the droplet and output metadata", func() {
+					Expect(session.ExitCode()).To(BeZero())
+
+					Expect(path.Join(outputDir, "droplet.tgz")).To(BeARegularFile())
+					Expect(path.Join(outputDir, "result.json")).To(BeARegularFile())
+				})
+			})
+
 			Context("when extract succeeds", func() {
 				BeforeEach(func() {
 					appbitBytes, err = ioutil.ReadFile("testdata/dora.zip")
@@ -337,7 +444,7 @@ var _ = Describe("StagingText", func() {
 					Expect(err).NotTo(HaveOccurred())
 					server.AppendHandlers(
 						ghttp.CombineHandlers(
-							ghttp.VerifyRequest("GET", "/my-buildpack"),
+							ghttp.VerifyRequest("GET", "/my-buildpack.zip"),
 							ghttp.RespondWith(http.StatusOK, buildpackBytes),
 						),
 						ghttp.CombineHandlers(
@@ -357,7 +464,7 @@ var _ = Describe("StagingText", func() {
 						{
 							Name: "ruby_buildpack",
 							Key:  "ruby_buildpack",
-							URL:  urljoiner.Join(server.URL(), "/my-buildpack"),
+							URL:  urljoiner.Join(server.URL(), "/my-buildpack.zip"),
 						},
 					}
 
@@ -422,7 +529,7 @@ var _ = Describe("StagingText", func() {
 					Expect(err).NotTo(HaveOccurred())
 					server.AppendHandlers(
 						ghttp.CombineHandlers(
-							ghttp.VerifyRequest("GET", "/my-buildpack"),
+							ghttp.VerifyRequest("GET", "/my-buildpack.zip"),
 							ghttp.RespondWith(http.StatusOK, buildpackBytes),
 						),
 						ghttp.CombineHandlers(
@@ -442,7 +549,7 @@ var _ = Describe("StagingText", func() {
 						{
 							Name:       "ruby_buildpack",
 							Key:        "ruby_buildpack",
-							URL:        urljoiner.Join(server.URL(), "/my-buildpack"),
+							URL:        urljoiner.Join(server.URL(), "/my-buildpack.zip"),
 							SkipDetect: true,
 						},
 					}
@@ -491,7 +598,7 @@ var _ = Describe("StagingText", func() {
 					Expect(err).NotTo(HaveOccurred())
 					server.AppendHandlers(
 						ghttp.CombineHandlers(
-							ghttp.VerifyRequest("GET", "/my-buildpack"),
+							ghttp.VerifyRequest("GET", "/my-buildpack.zip"),
 							ghttp.RespondWith(http.StatusOK, buildpackBytes),
 						),
 						ghttp.CombineHandlers(
@@ -536,7 +643,7 @@ var _ = Describe("StagingText", func() {
 							{
 								Name: "ruby_buildpack",
 								Key:  "ruby_buildpack",
-								URL:  urljoiner.Join(server.URL(), "/my-buildpack"),
+								URL:  urljoiner.Join(server.URL(), "/my-buildpack.zip"),
 							},
 						}
 
@@ -592,7 +699,7 @@ var _ = Describe("StagingText", func() {
 							{
 								Name:       "ruby_buildpack",
 								Key:        "ruby_buildpack",
-								URL:        urljoiner.Join(server.URL(), "/my-buildpack"),
+								URL:        urljoiner.Join(server.URL(), "/my-buildpack.zip"),
 								SkipDetect: true,
 							},
 						}
@@ -656,7 +763,7 @@ var _ = Describe("StagingText", func() {
 							{
 								Name:       "ruby_buildpack",
 								Key:        "ruby_buildpack",
-								URL:        urljoiner.Join(server.URL(), "/my-buildpack"),
+								URL:        urljoiner.Join(server.URL(), "/my-buildpack.zip"),
 								SkipDetect: true,
 							},
 						}
@@ -704,7 +811,7 @@ var _ = Describe("StagingText", func() {
 					Expect(err).NotTo(HaveOccurred())
 					server.AppendHandlers(
 						ghttp.CombineHandlers(
-							ghttp.VerifyRequest("GET", "/my-buildpack"),
+							ghttp.VerifyRequest("GET", "/my-buildpack.zip"),
 							ghttp.RespondWith(http.StatusOK, buildpackBytes),
 						),
 						ghttp.CombineHandlers(
@@ -724,7 +831,7 @@ var _ = Describe("StagingText", func() {
 						{
 							Name:       "binary_buildpack",
 							Key:        "binary_buildpack",
-							URL:        urljoiner.Join(server.URL(), "/my-buildpack"),
+							URL:        urljoiner.Join(server.URL(), "/my-buildpack.zip"),
 							SkipDetect: true,
 						},
 					}
@@ -771,7 +878,7 @@ var _ = Describe("StagingText", func() {
 				server.AppendHandlers(
 					// Downloader
 					ghttp.CombineHandlers(
-						ghttp.VerifyRequest("GET", "/my-buildpack"),
+						ghttp.VerifyRequest("GET", "/my-buildpack.zip"),
 						ghttp.RespondWith(http.StatusOK, buildpackBytes),
 					),
 					ghttp.CombineHandlers(
@@ -807,7 +914,7 @@ var _ = Describe("StagingText", func() {
 					{
 						Name: "ruby_buildpack",
 						Key:  "ruby_buildpack",
-						URL:  urljoiner.Join(server.URL(), "/my-buildpack"),
+						URL:  urljoiner.Join(server.URL(), "/my-buildpack.zip"),
 					},
 				}
 
