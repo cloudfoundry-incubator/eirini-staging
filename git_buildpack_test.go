@@ -18,8 +18,8 @@ import (
 var (
 	tmpDir      string
 	cloneTarget string
-	gitUrl      url.URL
-	fileGitUrl  url.URL
+	gitURL      url.URL
+	fileGitURL  url.URL
 
 	httpServer *httptest.Server
 )
@@ -76,13 +76,13 @@ var _ = Describe("GitBuildpack", func() {
 
 			httpServer = httptest.NewServer(http.FileServer(http.Dir(tmpDir)))
 
-			gitUrl = url.URL{
+			gitURL = url.URL{
 				Scheme: "http",
 				Host:   httpServer.Listener.Addr().String(),
 				Path:   "/fake-buildpack/.git",
 			}
 
-			fileGitUrl = url.URL{
+			fileGitURL = url.URL{
 				Scheme: "file",
 				Path:   tmpDir + "/fake-buildpack",
 			}
@@ -96,32 +96,32 @@ var _ = Describe("GitBuildpack", func() {
 
 		Context("With a Git transport that doesn't support `--depth`", func() {
 			It("clones a URL", func() {
-				err := eirinistaging.GitClone(gitUrl, cloneTarget)
+				err := eirinistaging.GitClone(gitURL, cloneTarget)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(currentBranch(cloneTarget)).To(Equal("master"))
 			})
 
 			It("clones a URL with a branch", func() {
-				branchUrl := gitUrl
-				branchUrl.Fragment = "a_branch"
-				err := eirinistaging.GitClone(branchUrl, cloneTarget)
+				branchURL := gitURL
+				branchURL.Fragment = "a_branch"
+				err := eirinistaging.GitClone(branchURL, cloneTarget)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(currentBranch(cloneTarget)).To(Equal("a_branch"))
 			})
 
 			It("clones a URL with a lightweight tag", func() {
-				branchUrl := gitUrl
-				branchUrl.Fragment = "a_lightweight_tag"
-				err := eirinistaging.GitClone(branchUrl, cloneTarget)
+				branchURL := gitURL
+				branchURL.Fragment = "a_lightweight_tag"
+				err := eirinistaging.GitClone(branchURL, cloneTarget)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(currentBranch(cloneTarget)).To(Equal("a_lightweight_tag"))
 			})
 
 			Context("when git repo has submodules", func() {
 				It("updates the submodules for the branch", func() {
-					branchUrl := gitUrl
-					branchUrl.Fragment = "a_branch"
-					err := eirinistaging.GitClone(branchUrl, cloneTarget)
+					branchURL := gitURL
+					branchURL.Fragment = "a_branch"
+					err := eirinistaging.GitClone(branchURL, cloneTarget)
 					Expect(err).NotTo(HaveOccurred())
 
 					fileContents, _ := ioutil.ReadFile(cloneTarget + "/sub/README")
@@ -132,16 +132,16 @@ var _ = Describe("GitBuildpack", func() {
 			Context("with bogus git URLs", func() {
 				It("returns an error", func() {
 					By("passing an invalid path", func() {
-						badUrl := gitUrl
-						badUrl.Path = "/a/bad/path"
-						err := eirinistaging.GitClone(badUrl, cloneTarget)
+						badURL := gitURL
+						badURL.Path = "/a/bad/path"
+						err := eirinistaging.GitClone(badURL, cloneTarget)
 						Expect(err).To(HaveOccurred())
 					})
 
 					By("passing a bad tag/branch", func() {
-						badUrl := gitUrl
-						badUrl.Fragment = "notfound"
-						err := eirinistaging.GitClone(badUrl, cloneTarget)
+						badURL := gitURL
+						badURL.Fragment = "notfound"
+						err := eirinistaging.GitClone(badURL, cloneTarget)
 						Expect(err).To(HaveOccurred())
 					})
 				})
@@ -150,23 +150,23 @@ var _ = Describe("GitBuildpack", func() {
 
 		Context("With a Git transport that supports `--depth`", func() {
 			It("clones a URL", func() {
-				err := eirinistaging.GitClone(fileGitUrl, cloneTarget)
+				err := eirinistaging.GitClone(fileGitURL, cloneTarget)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(currentBranch(cloneTarget)).To(Equal("master"))
 			})
 
 			It("clones a URL with a branch", func() {
-				branchUrl := fileGitUrl
-				branchUrl.Fragment = "a_branch"
-				err := eirinistaging.GitClone(branchUrl, cloneTarget)
+				branchURL := fileGitURL
+				branchURL.Fragment = "a_branch"
+				err := eirinistaging.GitClone(branchURL, cloneTarget)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(currentBranch(cloneTarget)).To(Equal("a_branch"))
 			})
 
 			It("clones a URL with a lightweight tag", func() {
-				branchUrl := fileGitUrl
-				branchUrl.Fragment = "a_lightweight_tag"
-				err := eirinistaging.GitClone(branchUrl, cloneTarget)
+				branchURL := fileGitURL
+				branchURL.Fragment = "a_lightweight_tag"
+				err := eirinistaging.GitClone(branchURL, cloneTarget)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(currentBranch(cloneTarget)).To(Equal("a_lightweight_tag"))
 			})
@@ -180,7 +180,8 @@ var _ = Describe("GitBuildpack", func() {
 					Skip("shallow clone not support with submodules for git 2.9.0")
 				}
 
-				eirinistaging.GitClone(fileGitUrl, cloneTarget)
+				err = eirinistaging.GitClone(fileGitURL, cloneTarget)
+				Expect(err).NotTo(HaveOccurred())
 
 				cmd := exec.Command("git", "rev-list", "HEAD", "--count")
 				cmd.Dir = cloneTarget

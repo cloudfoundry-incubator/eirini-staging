@@ -178,11 +178,12 @@ var _ = Describe("Buildpackmanager", func() {
 			tmpDir      string
 			cloneTarget string
 			gitUrl      url.URL
+			gitPath     string
 		)
 
 		BeforeEach(func() {
 			var err error
-			gitPath, err := exec.LookPath("git")
+			gitPath, err = exec.LookPath("git")
 			Expect(err).NotTo(HaveOccurred())
 
 			tmpDir, err = ioutil.TempDir("", "tmpDir")

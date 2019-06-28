@@ -29,6 +29,7 @@ func OpenBuildpackURL(buildpackURL string, client *http.Client) ([]byte, error) 
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to request buildpack")
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, errors.New(fmt.Sprintf("downloading buildpack failed with status code %d", resp.StatusCode))

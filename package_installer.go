@@ -49,30 +49,20 @@ func (d *PackageInstaller) download(downloadURL string, filepath string) error {
 	}
 	defer file.Close()
 
-	appBits, err := d.fetchAppBits(downloadURL)
+	resp, err := d.client.Get(downloadURL)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to perform request")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.New(fmt.Sprintf("download failed. status code %d", resp.StatusCode))
 	}
 
-	defer appBits.Close()
-
-	_, err = io.Copy(file, appBits)
+	_, err = io.Copy(file, resp.Body)
 	if err != nil {
 		return errors.Wrap(err, "failed to copy content to file")
 	}
 
 	return nil
-}
-
-func (d *PackageInstaller) fetchAppBits(url string) (io.ReadCloser, error) {
-	resp, err := d.client.Get(url)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to perform request")
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New(fmt.Sprintf("Download failed. Status Code %d", resp.StatusCode))
-	}
-
-	return resp.Body, nil
 }

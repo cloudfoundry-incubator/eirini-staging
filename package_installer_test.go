@@ -99,7 +99,7 @@ var _ = Describe("PackageInstaller", func() {
 
 			It("should return an meaningful err message", func() {
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(ContainSubstring("Download failed. Status Code")))
+				Expect(err).To(MatchError(ContainSubstring("download failed. status code")))
 			})
 		})
 

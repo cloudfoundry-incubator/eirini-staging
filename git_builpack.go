@@ -15,14 +15,14 @@ func GitClone(repo url.URL, destination string) error {
 
 	branch := repo.Fragment
 	repo.Fragment = ""
-	gitUrl := repo.String()
+	gitURL := repo.String()
 
 	err = performGitClone(gitPath,
 		[]string{
 			"--depth",
 			"1",
 			"--recursive",
-			gitUrl,
+			gitURL,
 			destination,
 		}, branch)
 
@@ -32,12 +32,12 @@ func GitClone(repo url.URL, destination string) error {
 		err = performGitClone(gitPath,
 			[]string{
 				"--recursive",
-				gitUrl,
+				gitURL,
 				destination,
 			}, branch)
 
 		if err != nil {
-			return fmt.Errorf("Failed to clone git repository at %s", gitUrl)
+			return fmt.Errorf("Failed to clone git repository at %s", gitURL)
 		}
 	}
 
