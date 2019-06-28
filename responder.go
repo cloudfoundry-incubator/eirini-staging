@@ -133,6 +133,7 @@ func (r Responder) sendCompleteResponse(response *models.TaskCallbackResponse) e
 	if err != nil {
 		return errors.Wrap(err, "request failed")
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
 		return errors.New("Request not successful")

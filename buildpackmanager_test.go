@@ -177,12 +177,11 @@ var _ = Describe("Buildpackmanager", func() {
 		var (
 			tmpDir      string
 			cloneTarget string
-			gitUrl      url.URL
+			gitURL      url.URL
 			gitPath     string
 		)
 
 		BeforeEach(func() {
-			var err error
 			gitPath, err = exec.LookPath("git")
 			Expect(err).NotTo(HaveOccurred())
 
@@ -237,7 +236,7 @@ var _ = Describe("Buildpackmanager", func() {
 
 		Context("with a valid url", func() {
 			BeforeEach(func() {
-				gitUrl = url.URL{
+				gitURL = url.URL{
 					Scheme: "http",
 					Host:   httpServer.Listener.Addr().String(),
 					Path:   "/fake-buildpack/.git",
@@ -247,7 +246,7 @@ var _ = Describe("Buildpackmanager", func() {
 					{
 						Name: "buildpack",
 						Key:  "key",
-						URL:  gitUrl.String(),
+						URL:  gitURL.String(),
 					},
 				}
 
@@ -261,7 +260,7 @@ var _ = Describe("Buildpackmanager", func() {
 
 		Context("with an invalid url", func() {
 			BeforeEach(func() {
-				gitUrl = url.URL{
+				gitURL = url.URL{
 					Scheme: "http",
 					Host:   "invalid.com",
 					Path:   "/invalid/.git",
@@ -271,7 +270,7 @@ var _ = Describe("Buildpackmanager", func() {
 					{
 						Name: "buildpack",
 						Key:  "key",
-						URL:  gitUrl.String(),
+						URL:  gitURL.String(),
 					},
 				}
 			})
