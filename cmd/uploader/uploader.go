@@ -47,7 +47,6 @@ func main() {
 		Client: client,
 	}
 
-	log.Println("droplet info:", dropletUploadURL, dropletLocation)
 	err = uploadClient.Upload(dropletUploadURL, dropletLocation)
 	if err != nil {
 		responder.RespondWithFailure(err)
