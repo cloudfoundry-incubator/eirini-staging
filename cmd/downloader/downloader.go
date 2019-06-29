@@ -35,7 +35,6 @@ func main() {
 		workspaceDir = eirinistaging.RecipeWorkspaceDir
 	}
 
-	log.Println("stagingGuid, completionCallback, eiriniAddress", stagingGUID, completionCallback, eiriniAddress)
 	responder := eirinistaging.NewResponder(stagingGUID, completionCallback, eiriniAddress)
 
 	downloadClient, err := createDownloadHTTPClient(certPath)

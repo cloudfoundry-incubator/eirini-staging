@@ -45,11 +45,11 @@ var _ = Describe("Buildpackmanager", func() {
 		server = ghttp.NewServer()
 		server.AppendHandlers(
 			ghttp.CombineHandlers(
-				ghttp.VerifyRequest("GET", "/my-buildpack.zip"),
+				ghttp.VerifyRequest("GET", "/my-buildpack"),
 				ghttp.RespondWith(http.StatusOK, responseContent),
 			),
 			ghttp.CombineHandlers(
-				ghttp.VerifyRequest("GET", "/your-buildpack.zip"),
+				ghttp.VerifyRequest("GET", "/your-buildpack"),
 				ghttp.RespondWith(http.StatusOK, responseContent),
 			),
 		)
@@ -70,12 +70,12 @@ var _ = Describe("Buildpackmanager", func() {
 				{
 					Name: "my_buildpack",
 					Key:  "my-key",
-					URL:  fmt.Sprintf("%s/my-buildpack.zip", server.URL()),
+					URL:  fmt.Sprintf("%s/my-buildpack", server.URL()),
 				},
 				{
 					Name: "your_buildpack",
 					Key:  "your-key",
-					URL:  fmt.Sprintf("%s/your-buildpack.zip", server.URL()),
+					URL:  fmt.Sprintf("%s/your-buildpack", server.URL()),
 				},
 			}
 		})
@@ -113,7 +113,7 @@ var _ = Describe("Buildpackmanager", func() {
 				{
 					Name:       "my_buildpack",
 					Key:        "my-key",
-					URL:        fmt.Sprintf("%s/my-buildpack.zip", server.URL()),
+					URL:        fmt.Sprintf("%s/my-buildpack", server.URL()),
 					SkipDetect: true,
 				},
 			}
@@ -170,6 +170,39 @@ var _ = Describe("Buildpackmanager", func() {
 		It("should try both http clients", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError(ContainSubstring("default client also failed")))
+		})
+	})
+
+	Context("When the buildpack file is invalid zip", func() {
+		BeforeEach(func() {
+			server = ghttp.NewServer()
+			server.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("GET", "/bad-buildpack.zip"),
+					ghttp.RespondWith(http.StatusOK, []byte{}),
+				),
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("GET", "/bad-buildpack.zip/info/refs"),
+					ghttp.RespondWith(http.StatusNotFound, nil),
+				),
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("GET", "/bad-buildpack.zip/info/refs"),
+					ghttp.RespondWith(http.StatusNotFound, nil),
+				),
+			)
+
+			buildpacks = []builder.Buildpack{
+				{
+					Name: "bad_buildpack",
+					Key:  "bad-key",
+					URL:  fmt.Sprintf("%s/bad-buildpack.zip", server.URL()),
+				},
+			}
+		})
+
+		It("should try http client and also git clone", func() {
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(ContainSubstring("Failed to clone git repository")))
 		})
 	})
 
@@ -255,29 +288,6 @@ var _ = Describe("Buildpackmanager", func() {
 
 			It("should succeed cloning the buildpack", func() {
 				Expect(err).NotTo(HaveOccurred())
-			})
-		})
-
-		Context("with an invalid url", func() {
-			BeforeEach(func() {
-				gitURL = url.URL{
-					Scheme: "http",
-					Host:   "invalid.com",
-					Path:   "/invalid/.git",
-				}
-
-				buildpacks = []builder.Buildpack{
-					{
-						Name: "buildpack",
-						Key:  "key",
-						URL:  gitURL.String(),
-					},
-				}
-			})
-
-			It("should fail cloning the buildpack", func() {
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("Failed to clone git repository at http://invalid.com/invalid/.git"))
 			})
 		})
 	})

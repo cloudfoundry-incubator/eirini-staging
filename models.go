@@ -4,6 +4,14 @@ import (
 	"code.cloudfoundry.org/eirini-staging/builder"
 )
 
+type NotZipFileError struct {
+	err error
+}
+
+func (z NotZipFileError) Error() string {
+	return z.err.Error()
+}
+
 type Executor interface {
 	ExecuteRecipe() error
 }

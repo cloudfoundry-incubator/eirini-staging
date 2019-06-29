@@ -72,8 +72,13 @@ func (b *BuildpackManager) Install() error {
 
 func (b *BuildpackManager) install(buildpack builder.Buildpack) error {
 	destination := builder.BuildpackPath(b.buildpackDir, buildpack.Name)
-	if builder.IsZipFile(buildpack.URL) {
-		return b.installFromArchive(buildpack, destination)
+	err := b.installFromArchive(buildpack, destination)
+	if err == nil {
+		return nil
+	}
+
+	if _, ok := err.(NotZipFileError); !ok {
+		return err
 	}
 
 	buildpackURL, err := url.Parse(buildpack.URL)
@@ -116,7 +121,7 @@ func (b *BuildpackManager) installFromArchive(buildpack builder.Buildpack, build
 
 	err = b.unzipper.Extract(fileName, buildpackPath)
 	if err != nil {
-		return err
+		return NotZipFileError{err: err}
 	}
 
 	return err
