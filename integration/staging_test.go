@@ -167,7 +167,7 @@ var _ = Describe("StagingText", func() {
 							ghttp.RespondWith(http.StatusOK, appbitBytes),
 						),
 					)
-					server.Start()
+					server.HTTPTestServer.StartTLS()
 
 					err = os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())
 					Expect(err).NotTo(HaveOccurred())
@@ -222,7 +222,7 @@ var _ = Describe("StagingText", func() {
 							ghttp.RespondWith(http.StatusOK, appbitBytes),
 						),
 					)
-					server.Start()
+					server.HTTPTestServer.StartTLS()
 
 					err = os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())
 					Expect(err).NotTo(HaveOccurred())
@@ -334,7 +334,7 @@ var _ = Describe("StagingText", func() {
 							verifyResponse(true, "not a valid zip file"),
 						),
 					)
-					server.Start()
+					server.HTTPTestServer.StartTLS()
 
 					err = os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())
 					Expect(err).NotTo(HaveOccurred())
@@ -389,7 +389,7 @@ var _ = Describe("StagingText", func() {
 							ghttp.RespondWith(http.StatusOK, appbitBytes),
 						),
 					)
-					server.Start()
+					server.HTTPTestServer.StartTLS()
 
 					err = os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())
 					Expect(err).NotTo(HaveOccurred())
@@ -452,7 +452,7 @@ var _ = Describe("StagingText", func() {
 							ghttp.RespondWith(http.StatusOK, appbitBytes),
 						),
 					)
-					server.Start()
+					server.HTTPTestServer.StartTLS()
 
 					err = os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())
 					Expect(err).NotTo(HaveOccurred())
@@ -537,7 +537,7 @@ var _ = Describe("StagingText", func() {
 							ghttp.RespondWith(http.StatusOK, appbitBytes),
 						),
 					)
-					server.Start()
+					server.HTTPTestServer.StartTLS()
 
 					err = os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())
 					Expect(err).NotTo(HaveOccurred())
@@ -606,7 +606,7 @@ var _ = Describe("StagingText", func() {
 							ghttp.RespondWith(http.StatusOK, appbitBytes),
 						),
 					)
-					server.Start()
+					server.HTTPTestServer.StartTLS()
 
 					err = os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())
 					Expect(err).NotTo(HaveOccurred())
@@ -819,7 +819,7 @@ var _ = Describe("StagingText", func() {
 							ghttp.RespondWith(http.StatusOK, appbitBytes),
 						),
 					)
-					server.Start()
+					server.HTTPTestServer.StartTLS()
 
 					err = os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())
 					Expect(err).NotTo(HaveOccurred())
@@ -899,7 +899,7 @@ var _ = Describe("StagingText", func() {
 					),
 				)
 
-				server.Start()
+				server.HTTPTestServer.StartTLS()
 
 				err = os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())
 				Expect(err).NotTo(HaveOccurred())
