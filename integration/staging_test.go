@@ -58,46 +58,34 @@ var _ = Describe("StagingText", func() {
 
 		workspaceDir, err = ioutil.TempDir("", "workspace")
 		Expect(err).NotTo(HaveOccurred())
-		err = os.Setenv(eirinistaging.EnvWorkspaceDir, workspaceDir)
-		Expect(err).NotTo(HaveOccurred())
+		Expect(os.Setenv(eirinistaging.EnvWorkspaceDir, workspaceDir)).To(Succeed())
 
-		err = chownR(workspaceDir, "vcap", "vcap")
-		Expect(err).NotTo(HaveOccurred())
+		Expect(chownR(workspaceDir, "vcap", "vcap")).To(Succeed())
 
 		outputDir, err = ioutil.TempDir("", "out")
 		Expect(err).NotTo(HaveOccurred())
-		err = os.Setenv(eirinistaging.EnvOutputDropletLocation, path.Join(outputDir, "droplet.tgz"))
-		Expect(err).NotTo(HaveOccurred())
-		err = os.Setenv(eirinistaging.EnvOutputMetadataLocation, path.Join(outputDir, "result.json"))
-		Expect(err).NotTo(HaveOccurred())
+		Expect(os.Setenv(eirinistaging.EnvOutputDropletLocation, path.Join(outputDir, "droplet.tgz"))).To(Succeed())
+		Expect(os.Setenv(eirinistaging.EnvOutputMetadataLocation, path.Join(outputDir, "result.json"))).To(Succeed())
 
-		err = os.Setenv("CF_STACK", "cflinuxfs2")
-		Expect(err).NotTo(HaveOccurred())
+		Expect(os.Setenv("CF_STACK", "cflinuxfs2")).To(Succeed())
 
-		err = chownR(outputDir, "vcap", "vcap")
-		Expect(err).NotTo(HaveOccurred())
+		Expect(chownR(outputDir, "vcap", "vcap")).To(Succeed())
 
 		cacheDir, err = ioutil.TempDir("", "cache")
 		Expect(err).NotTo(HaveOccurred())
-		err = os.Setenv(eirinistaging.EnvOutputBuildArtifactsCache, path.Join(cacheDir, "cache.tgz"))
-		Expect(err).NotTo(HaveOccurred())
+		Expect(os.Setenv(eirinistaging.EnvOutputBuildArtifactsCache, path.Join(cacheDir, "cache.tgz"))).To(Succeed())
 
-		err = chownR(cacheDir, "vcap", "vcap")
-		Expect(err).NotTo(HaveOccurred())
+		Expect(chownR(cacheDir, "vcap", "vcap")).To(Succeed())
 
 		buildpacksDir, err = ioutil.TempDir("", "buildpacks")
 		Expect(err).NotTo(HaveOccurred())
-		err = os.Setenv(eirinistaging.EnvBuildpacksDir, buildpacksDir)
-		Expect(err).NotTo(HaveOccurred())
+		Expect(os.Setenv(eirinistaging.EnvBuildpacksDir, buildpacksDir)).To(Succeed())
 
-		err = chownR(buildpacksDir, "vcap", "vcap")
-		Expect(err).NotTo(HaveOccurred())
+		Expect(chownR(buildpacksDir, "vcap", "vcap")).To(Succeed())
 
-		err = os.Setenv(eirinistaging.EnvStagingGUID, stagingGUID)
-		Expect(err).NotTo(HaveOccurred())
+		Expect(os.Setenv(eirinistaging.EnvStagingGUID, stagingGUID)).To(Succeed())
 
-		err = os.Setenv(eirinistaging.EnvCompletionCallback, completionCallback)
-		Expect(err).NotTo(HaveOccurred())
+		Expect(os.Setenv(eirinistaging.EnvCompletionCallback, completionCallback)).To(Succeed())
 
 		certsPath, err = filepath.Abs("testdata/certs")
 		Expect(err).NotTo(HaveOccurred())
@@ -119,39 +107,23 @@ var _ = Describe("StagingText", func() {
 	})
 
 	AfterEach(func() {
-		err = os.RemoveAll(buildpacksDir)
-		Expect(err).ToNot(HaveOccurred())
-		err = os.RemoveAll(workspaceDir)
-		Expect(err).ToNot(HaveOccurred())
-		err = os.RemoveAll(outputDir)
-		Expect(err).ToNot(HaveOccurred())
-		err = os.RemoveAll(cacheDir)
-		Expect(err).ToNot(HaveOccurred())
+		Expect(os.RemoveAll(buildpacksDir)).To(Succeed())
+		Expect(os.RemoveAll(workspaceDir)).To(Succeed())
+		Expect(os.RemoveAll(outputDir)).To(Succeed())
+		Expect(os.RemoveAll(cacheDir)).To(Succeed())
 
-		err = os.Unsetenv("cflinuxfs2")
-		Expect(err).ToNot(HaveOccurred())
-		err = os.Unsetenv(eirinistaging.EnvCertsPath)
-		Expect(err).ToNot(HaveOccurred())
-		err = os.Unsetenv(eirinistaging.EnvStagingGUID)
-		Expect(err).NotTo(HaveOccurred())
-		err = os.Unsetenv(eirinistaging.EnvCompletionCallback)
-		Expect(err).NotTo(HaveOccurred())
-		err = os.Unsetenv(eirinistaging.EnvBuildpacksDir)
-		Expect(err).NotTo(HaveOccurred())
-		err = os.Unsetenv(eirinistaging.EnvBuildpacks)
-		Expect(err).ToNot(HaveOccurred())
-		err = os.Unsetenv(eirinistaging.EnvDownloadURL)
-		Expect(err).ToNot(HaveOccurred())
-		err = os.Unsetenv(eirinistaging.EnvWorkspaceDir)
-		Expect(err).ToNot(HaveOccurred())
-		err = os.Unsetenv(eirinistaging.EnvOutputDropletLocation)
-		Expect(err).NotTo(HaveOccurred())
-		err = os.Unsetenv(eirinistaging.EnvOutputMetadataLocation)
-		Expect(err).NotTo(HaveOccurred())
-		err = os.Unsetenv(eirinistaging.EnvOutputBuildArtifactsCache)
-		Expect(err).NotTo(HaveOccurred())
-		err = os.Unsetenv(eirinistaging.EnvEiriniAddress)
-		Expect(err).NotTo(HaveOccurred())
+		Expect(os.Unsetenv("cflinuxfs2")).To(Succeed())
+		Expect(os.Unsetenv(eirinistaging.EnvCertsPath)).To(Succeed())
+		Expect(os.Unsetenv(eirinistaging.EnvStagingGUID)).To(Succeed())
+		Expect(os.Unsetenv(eirinistaging.EnvCompletionCallback)).To(Succeed())
+		Expect(os.Unsetenv(eirinistaging.EnvBuildpacksDir)).To(Succeed())
+		Expect(os.Unsetenv(eirinistaging.EnvBuildpacks)).To(Succeed())
+		Expect(os.Unsetenv(eirinistaging.EnvDownloadURL)).To(Succeed())
+		Expect(os.Unsetenv(eirinistaging.EnvWorkspaceDir)).To(Succeed())
+		Expect(os.Unsetenv(eirinistaging.EnvOutputDropletLocation)).To(Succeed())
+		Expect(os.Unsetenv(eirinistaging.EnvOutputMetadataLocation)).To(Succeed())
+		Expect(os.Unsetenv(eirinistaging.EnvOutputBuildArtifactsCache)).To(Succeed())
+		Expect(os.Unsetenv(eirinistaging.EnvEiriniAddress)).To(Succeed())
 	})
 
 	Context("when a droplet needs building...", func() {
@@ -169,11 +141,9 @@ var _ = Describe("StagingText", func() {
 					)
 					server.Start()
 
-					err = os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())
-					Expect(err).NotTo(HaveOccurred())
+					Expect(os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())).To(Succeed())
 
-					err = os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))
-					Expect(err).ToNot(HaveOccurred())
+					Expect(os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))).To(Succeed())
 
 					buildpacks = []builder.Buildpack{
 						{
@@ -186,11 +156,9 @@ var _ = Describe("StagingText", func() {
 					buildpackJSON, err = json.Marshal(buildpacks)
 					Expect(err).ToNot(HaveOccurred())
 
-					err = os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))
-					Expect(err).ToNot(HaveOccurred())
+					Expect(os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))).To(Succeed())
 
-					err = os.Setenv(eirinistaging.EnvCertsPath, certsPath)
-					Expect(err).ToNot(HaveOccurred())
+					Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 				})
 
 				JustBeforeEach(func() {
@@ -224,11 +192,9 @@ var _ = Describe("StagingText", func() {
 					)
 					server.Start()
 
-					err = os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())
-					Expect(err).NotTo(HaveOccurred())
+					Expect(os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())).To(Succeed())
 
-					err = os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))
-					Expect(err).ToNot(HaveOccurred())
+					Expect(os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))).To(Succeed())
 
 					buildpacks = []builder.Buildpack{
 						{
@@ -241,11 +207,9 @@ var _ = Describe("StagingText", func() {
 					buildpackJSON, err = json.Marshal(buildpacks)
 					Expect(err).ToNot(HaveOccurred())
 
-					err = os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))
-					Expect(err).ToNot(HaveOccurred())
+					Expect(os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))).To(Succeed())
 
-					err = os.Setenv(eirinistaging.EnvCertsPath, certsPath)
-					Expect(err).ToNot(HaveOccurred())
+					Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 				})
 
 				JustBeforeEach(func() {
@@ -290,8 +254,7 @@ var _ = Describe("StagingText", func() {
 						buildpackJSON, err = json.Marshal(buildpacks)
 						Expect(err).ToNot(HaveOccurred())
 
-						err = os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))
-						Expect(err).ToNot(HaveOccurred())
+						Expect(os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))).To(Succeed())
 
 						server.SetHandler(0,
 							ghttp.CombineHandlers(
@@ -336,11 +299,9 @@ var _ = Describe("StagingText", func() {
 					)
 					server.Start()
 
-					err = os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())
-					Expect(err).NotTo(HaveOccurred())
+					Expect(os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())).To(Succeed())
 
-					err = os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))
-					Expect(err).ToNot(HaveOccurred())
+					Expect(os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))).To(Succeed())
 
 					buildpacks = []builder.Buildpack{
 						{
@@ -353,17 +314,12 @@ var _ = Describe("StagingText", func() {
 					buildpackJSON, err = json.Marshal(buildpacks)
 					Expect(err).ToNot(HaveOccurred())
 
-					err = os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))
-					Expect(err).ToNot(HaveOccurred())
+					Expect(os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))).To(Succeed())
 
-					err = os.Setenv(eirinistaging.EnvCertsPath, certsPath)
-					Expect(err).ToNot(HaveOccurred())
+					Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
 					cmd := exec.Command(binaries.DownloaderPath)
-					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-					Eventually(session).Should(gexec.Exit())
-					Expect(err).NotTo(HaveOccurred())
-
+					Eventually(gexec.Start(cmd, GinkgoWriter, GinkgoWriter)).Should(gexec.Exit())
 				})
 
 				JustBeforeEach(func() {
@@ -391,11 +347,9 @@ var _ = Describe("StagingText", func() {
 					)
 					server.Start()
 
-					err = os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())
-					Expect(err).NotTo(HaveOccurred())
+					Expect(os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())).To(Succeed())
 
-					err = os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))
-					Expect(err).ToNot(HaveOccurred())
+					Expect(os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))).To(Succeed())
 
 					buildpacks = []builder.Buildpack{
 						{
@@ -408,11 +362,9 @@ var _ = Describe("StagingText", func() {
 					buildpackJSON, err = json.Marshal(buildpacks)
 					Expect(err).ToNot(HaveOccurred())
 
-					err = os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))
-					Expect(err).ToNot(HaveOccurred())
+					Expect(os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))).To(Succeed())
 
-					err = os.Setenv(eirinistaging.EnvCertsPath, certsPath)
-					Expect(err).ToNot(HaveOccurred())
+					Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
 					cmd := exec.Command(binaries.DownloaderPath)
 					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
@@ -454,11 +406,9 @@ var _ = Describe("StagingText", func() {
 					)
 					server.Start()
 
-					err = os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())
-					Expect(err).NotTo(HaveOccurred())
+					Expect(os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())).To(Succeed())
 
-					err = os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))
-					Expect(err).ToNot(HaveOccurred())
+					Expect(os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))).To(Succeed())
 
 					buildpacks = []builder.Buildpack{
 						{
@@ -471,16 +421,12 @@ var _ = Describe("StagingText", func() {
 					buildpackJSON, err = json.Marshal(buildpacks)
 					Expect(err).ToNot(HaveOccurred())
 
-					err = os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))
-					Expect(err).ToNot(HaveOccurred())
+					Expect(os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))).To(Succeed())
 
-					err = os.Setenv(eirinistaging.EnvCertsPath, certsPath)
-					Expect(err).ToNot(HaveOccurred())
+					Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
 					cmd := exec.Command(binaries.DownloaderPath)
-					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-					Eventually(session).Should(gexec.Exit())
-					Expect(err).NotTo(HaveOccurred())
+					Eventually(gexec.Start(cmd, GinkgoWriter, GinkgoWriter)).Should(gexec.Exit())
 
 				})
 
@@ -499,8 +445,7 @@ var _ = Describe("StagingText", func() {
 
 				Context("fails", func() {
 					BeforeEach(func() {
-						err = os.Setenv(eirinistaging.EnvWorkspaceDir, filepath.Join(workspaceDir, "bad-workspace-dir"))
-						Expect(err).NotTo(HaveOccurred())
+						Expect(os.Setenv(eirinistaging.EnvWorkspaceDir, filepath.Join(workspaceDir, "bad-workspace-dir"))).To(Succeed())
 
 						server.AppendHandlers(
 							ghttp.CombineHandlers(
@@ -539,11 +484,9 @@ var _ = Describe("StagingText", func() {
 					)
 					server.Start()
 
-					err = os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())
-					Expect(err).NotTo(HaveOccurred())
+					Expect(os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())).To(Succeed())
 
-					err = os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))
-					Expect(err).ToNot(HaveOccurred())
+					Expect(os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))).To(Succeed())
 
 					buildpacks = []builder.Buildpack{
 						{
@@ -557,17 +500,12 @@ var _ = Describe("StagingText", func() {
 					buildpackJSON, err = json.Marshal(buildpacks)
 					Expect(err).ToNot(HaveOccurred())
 
-					err = os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))
-					Expect(err).ToNot(HaveOccurred())
+					Expect(os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))).To(Succeed())
 
-					err = os.Setenv(eirinistaging.EnvCertsPath, certsPath)
-					Expect(err).ToNot(HaveOccurred())
+					Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
 					cmd := exec.Command(binaries.DownloaderPath)
-					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-					Eventually(session).Should(gexec.Exit())
-					Expect(err).NotTo(HaveOccurred())
-
+					Eventually(gexec.Start(cmd, GinkgoWriter, GinkgoWriter)).Should(gexec.Exit())
 				})
 
 				JustBeforeEach(func() {
@@ -608,17 +546,14 @@ var _ = Describe("StagingText", func() {
 					)
 					server.Start()
 
-					err = os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())
-					Expect(err).NotTo(HaveOccurred())
+					Expect(os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())).To(Succeed())
 
-					err = os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))
-					Expect(err).ToNot(HaveOccurred())
+					Expect(os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))).To(Succeed())
 
 				})
 
 				AfterEach(func() {
-					err = os.RemoveAll(tmpdir)
-					Expect(err).NotTo(HaveOccurred())
+					Expect(os.RemoveAll(tmpdir)).To(Succeed())
 				})
 
 				Context("when detect fails", func() {
@@ -650,11 +585,9 @@ var _ = Describe("StagingText", func() {
 						buildpackJSON, err = json.Marshal(buildpacks)
 						Expect(err).ToNot(HaveOccurred())
 
-						err = os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))
-						Expect(err).ToNot(HaveOccurred())
+						Expect(os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))).To(Succeed())
 
-						err = os.Setenv(eirinistaging.EnvCertsPath, certsPath)
-						Expect(err).ToNot(HaveOccurred())
+						Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
 						cmd := exec.Command(binaries.DownloaderPath)
 						session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
@@ -707,11 +640,9 @@ var _ = Describe("StagingText", func() {
 						buildpackJSON, err = json.Marshal(buildpacks)
 						Expect(err).ToNot(HaveOccurred())
 
-						err = os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))
-						Expect(err).ToNot(HaveOccurred())
+						Expect(os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))).To(Succeed())
 
-						err = os.Setenv(eirinistaging.EnvCertsPath, certsPath)
-						Expect(err).ToNot(HaveOccurred())
+						Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
 						cmd := exec.Command(binaries.DownloaderPath)
 						session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
@@ -771,11 +702,9 @@ var _ = Describe("StagingText", func() {
 						buildpackJSON, err = json.Marshal(buildpacks)
 						Expect(err).ToNot(HaveOccurred())
 
-						err = os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))
-						Expect(err).ToNot(HaveOccurred())
+						Expect(os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))).To(Succeed())
 
-						err = os.Setenv(eirinistaging.EnvCertsPath, certsPath)
-						Expect(err).ToNot(HaveOccurred())
+						Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
 						cmd := exec.Command(binaries.DownloaderPath)
 						session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
@@ -821,11 +750,9 @@ var _ = Describe("StagingText", func() {
 					)
 					server.Start()
 
-					err = os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())
-					Expect(err).NotTo(HaveOccurred())
+					Expect(os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())).To(Succeed())
 
-					err = os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))
-					Expect(err).ToNot(HaveOccurred())
+					Expect(os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))).To(Succeed())
 
 					buildpacks = []builder.Buildpack{
 						{
@@ -839,11 +766,9 @@ var _ = Describe("StagingText", func() {
 					buildpackJSON, err = json.Marshal(buildpacks)
 					Expect(err).ToNot(HaveOccurred())
 
-					err = os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))
-					Expect(err).ToNot(HaveOccurred())
+					Expect(os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))).To(Succeed())
 
-					err = os.Setenv(eirinistaging.EnvCertsPath, certsPath)
-					Expect(err).ToNot(HaveOccurred())
+					Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
 					cmd := exec.Command(binaries.DownloaderPath)
 					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
@@ -901,14 +826,11 @@ var _ = Describe("StagingText", func() {
 
 				server.Start()
 
-				err = os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())
-				Expect(err).NotTo(HaveOccurred())
+				Expect(os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())).To(Succeed())
 
-				err = os.Setenv(eirinistaging.EnvDropletUploadURL, urljoiner.Join(server.URL(), "my-droplet"))
-				Expect(err).ToNot(HaveOccurred())
+				Expect(os.Setenv(eirinistaging.EnvDropletUploadURL, urljoiner.Join(server.URL(), "my-droplet"))).To(Succeed())
 
-				err = os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))
-				Expect(err).ToNot(HaveOccurred())
+				Expect(os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))).To(Succeed())
 
 				buildpacks = []builder.Buildpack{
 					{
@@ -921,11 +843,9 @@ var _ = Describe("StagingText", func() {
 				buildpackJSON, err = json.Marshal(buildpacks)
 				Expect(err).ToNot(HaveOccurred())
 
-				err = os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))
-				Expect(err).ToNot(HaveOccurred())
+				Expect(os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))).To(Succeed())
 
-				err = os.Setenv(eirinistaging.EnvCertsPath, certsPath)
-				Expect(err).ToNot(HaveOccurred())
+				Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
 				cmd := exec.Command(binaries.DownloaderPath)
 				session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
@@ -950,8 +870,7 @@ var _ = Describe("StagingText", func() {
 
 			Context("fails", func() {
 				BeforeEach(func() {
-					err = os.Setenv(eirinistaging.EnvOutputDropletLocation, path.Join(outputDir, "bad-location.tgz"))
-					Expect(err).NotTo(HaveOccurred())
+					Expect(os.Setenv(eirinistaging.EnvOutputDropletLocation, path.Join(outputDir, "bad-location.tgz"))).To(Succeed())
 
 					server.SetHandler(2,
 						ghttp.CombineHandlers(
@@ -998,8 +917,7 @@ func verifyResponse(failed bool, reason string) http.HandlerFunc {
 		Expect(err).ShouldNot(HaveOccurred())
 
 		var uploaderResponse models.TaskCallbackResponse
-		err = json.Unmarshal(body, &uploaderResponse)
-		Expect(err).NotTo(HaveOccurred())
+		Expect(json.Unmarshal(body, &uploaderResponse)).To(Succeed())
 		Expect(uploaderResponse.Failed).To(Equal(failed))
 		if failed {
 			Expect(uploaderResponse.FailureReason).To(ContainSubstring(reason))
