@@ -5,10 +5,12 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	"code.cloudfoundry.org/bbs/models"
 	. "code.cloudfoundry.org/eirini-staging"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
+	"code.cloudfoundry.org/tlsconfig"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
@@ -23,15 +25,36 @@ var _ = Describe("Responder", func() {
 		)
 
 		BeforeEach(func() {
-			server = ghttp.NewServer()
+			server = ghttp.NewUnstartedServer()
+			certsPath, err := filepath.Abs("integration/testdata/certs")
+			Expect(err).NotTo(HaveOccurred())
+
+			certPath := filepath.Join(certsPath, "eirini.crt")
+			keyPath := filepath.Join(certsPath, "eirini.key")
+			caCertPath := filepath.Join(certsPath, "clientCA.crt")
+
+			tlsConfig, err := tlsconfig.Build(
+				tlsconfig.WithInternalServiceDefaults(),
+				tlsconfig.WithIdentityFromFile(certPath, keyPath),
+			).Server(
+				tlsconfig.WithClientAuthenticationFromFile(caCertPath),
+			)
+			Expect(err).NotTo(HaveOccurred())
+			server.HTTPTestServer.TLS = tlsConfig
+			server.HTTPTestServer.StartTLS()
 		})
 
 		JustBeforeEach(func() {
 			stagingGUID := "staging-guid"
 			completionCallback := "completion-call-me-back"
+			certsPath, err := filepath.Abs("integration/testdata/certs")
+			Expect(err).NotTo(HaveOccurred())
+			caCertPath := filepath.Join(certsPath, "eirini-ca.crt")
+			clientCert := filepath.Join(certsPath, "eirini-client.crt")
+			clientKey := filepath.Join(certsPath, "eirini-client.key")
 			eiriniAddr := server.URL()
 
-			responder = NewResponder(stagingGUID, completionCallback, eiriniAddr)
+			responder = NewResponder(stagingGUID, completionCallback, eiriniAddr, caCertPath, clientCert, clientKey)
 		})
 
 		AfterEach(func() {

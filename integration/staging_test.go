@@ -37,21 +37,23 @@ var _ = Describe("StagingText", func() {
 	)
 
 	var (
-		err            error
-		server         *ghttp.Server
-		appbitBytes    []byte
-		buildpackBytes []byte
-		session        *gexec.Session
-		buildpacks     []builder.Buildpack
-		buildpacksDir  string
-		workspaceDir   string
-		outputDir      string
-		cacheDir       string
-		certsPath      string
-		tlsConfig      *tls.Config
-		buildpackJSON  []byte
-		actualBytes    []byte
-		expectedBytes  []byte
+		err             error
+		server          *ghttp.Server
+		eiriniServer    *ghttp.Server
+		appbitBytes     []byte
+		buildpackBytes  []byte
+		session         *gexec.Session
+		buildpacks      []builder.Buildpack
+		buildpacksDir   string
+		workspaceDir    string
+		outputDir       string
+		cacheDir        string
+		certsPath       string
+		tlsConfig       *tls.Config
+		eiriniTLSConfig *tls.Config
+		buildpackJSON   []byte
+		actualBytes     []byte
+		expectedBytes   []byte
 	)
 
 	BeforeEach(func() {
@@ -104,6 +106,19 @@ var _ = Describe("StagingText", func() {
 
 		server = ghttp.NewUnstartedServer()
 		server.HTTPTestServer.TLS = tlsConfig
+
+		eiriniCertPath := filepath.Join(certsPath, "eirini.crt")
+		eiriniKeyPath := filepath.Join(certsPath, "eirini.key")
+		eiriniCACertPath := filepath.Join(certsPath, "clientCA.crt")
+		eiriniTLSConfig, err = tlsconfig.Build(
+			tlsconfig.WithInternalServiceDefaults(),
+			tlsconfig.WithIdentityFromFile(eiriniCertPath, eiriniKeyPath),
+		).Server(
+			tlsconfig.WithClientAuthenticationFromFile(eiriniCACertPath),
+		)
+
+		eiriniServer = ghttp.NewUnstartedServer()
+		eiriniServer.HTTPTestServer.TLS = eiriniTLSConfig
 	})
 
 	AfterEach(func() {
@@ -124,6 +139,8 @@ var _ = Describe("StagingText", func() {
 		Expect(os.Unsetenv(eirinistaging.EnvOutputMetadataLocation)).To(Succeed())
 		Expect(os.Unsetenv(eirinistaging.EnvOutputBuildArtifactsCache)).To(Succeed())
 		Expect(os.Unsetenv(eirinistaging.EnvEiriniAddress)).To(Succeed())
+		server.Close()
+		eiriniServer.Close()
 	})
 
 	Context("when a droplet needs building...", func() {
@@ -139,9 +156,10 @@ var _ = Describe("StagingText", func() {
 							ghttp.RespondWith(http.StatusOK, appbitBytes),
 						),
 					)
-					server.Start()
+					server.HTTPTestServer.StartTLS()
+					eiriniServer.HTTPTestServer.StartTLS()
 
-					Expect(os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())).To(Succeed())
+					Expect(os.Setenv(eirinistaging.EnvEiriniAddress, eiriniServer.URL())).To(Succeed())
 
 					Expect(os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))).To(Succeed())
 
@@ -164,7 +182,7 @@ var _ = Describe("StagingText", func() {
 				JustBeforeEach(func() {
 					cmd := exec.Command(binaries.DownloaderPath)
 					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-					Eventually(session, 10).Should(gexec.Exit())
+					Eventually(session, 60).Should(gexec.Exit())
 				})
 
 				It("runs successfully", func() {
@@ -190,9 +208,10 @@ var _ = Describe("StagingText", func() {
 							ghttp.RespondWith(http.StatusOK, appbitBytes),
 						),
 					)
-					server.Start()
+					server.HTTPTestServer.StartTLS()
+					eiriniServer.HTTPTestServer.StartTLS()
 
-					Expect(os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())).To(Succeed())
+					Expect(os.Setenv(eirinistaging.EnvEiriniAddress, eiriniServer.URL())).To(Succeed())
 
 					Expect(os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))).To(Succeed())
 
@@ -256,7 +275,7 @@ var _ = Describe("StagingText", func() {
 
 						Expect(os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))).To(Succeed())
 
-						server.SetHandler(0,
+						eiriniServer.AppendHandlers(
 							ghttp.CombineHandlers(
 								ghttp.VerifyRequest("PUT", responseURL),
 								verifyResponse(true, "failed to request buildpack"),
@@ -265,7 +284,7 @@ var _ = Describe("StagingText", func() {
 					})
 
 					It("should send completion response with a failure", func() {
-						Expect(server.ReceivedRequests()).To(HaveLen(1))
+						Expect(eiriniServer.ReceivedRequests()).To(HaveLen(1))
 					})
 
 					It("should exit with non-zero exit code", func() {
@@ -292,14 +311,17 @@ var _ = Describe("StagingText", func() {
 							ghttp.VerifyRequest("GET", "/my-app-bits"),
 							ghttp.RespondWith(http.StatusOK, appbitBytes),
 						),
+					)
+					eiriniServer.AppendHandlers(
 						ghttp.CombineHandlers(
 							ghttp.VerifyRequest("PUT", responseURL),
 							verifyResponse(true, "not a valid zip file"),
 						),
 					)
-					server.Start()
+					server.HTTPTestServer.StartTLS()
+					eiriniServer.HTTPTestServer.StartTLS()
 
-					Expect(os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())).To(Succeed())
+					Expect(os.Setenv(eirinistaging.EnvEiriniAddress, eiriniServer.URL())).To(Succeed())
 
 					Expect(os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))).To(Succeed())
 
@@ -319,7 +341,9 @@ var _ = Describe("StagingText", func() {
 					Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
 					cmd := exec.Command(binaries.DownloaderPath)
-					Eventually(gexec.Start(cmd, GinkgoWriter, GinkgoWriter)).Should(gexec.Exit())
+					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+					Expect(err).ToNot(HaveOccurred())
+					Eventually(session).Should(gexec.Exit())
 				})
 
 				JustBeforeEach(func() {
@@ -330,7 +354,7 @@ var _ = Describe("StagingText", func() {
 
 				It("should send completion response with a failure", func() {
 					Expect(session.ExitCode).NotTo(BeZero())
-					Expect(server.ReceivedRequests()).To(HaveLen(3))
+					Expect(eiriniServer.ReceivedRequests()).To(HaveLen(1))
 				})
 			})
 
@@ -345,9 +369,10 @@ var _ = Describe("StagingText", func() {
 							ghttp.RespondWith(http.StatusOK, appbitBytes),
 						),
 					)
-					server.Start()
+					server.HTTPTestServer.StartTLS()
+					eiriniServer.HTTPTestServer.StartTLS()
 
-					Expect(os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())).To(Succeed())
+					Expect(os.Setenv(eirinistaging.EnvEiriniAddress, eiriniServer.URL())).To(Succeed())
 
 					Expect(os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))).To(Succeed())
 
@@ -404,9 +429,10 @@ var _ = Describe("StagingText", func() {
 							ghttp.RespondWith(http.StatusOK, appbitBytes),
 						),
 					)
-					server.Start()
+					server.HTTPTestServer.StartTLS()
+					eiriniServer.HTTPTestServer.StartTLS()
 
-					Expect(os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())).To(Succeed())
+					Expect(os.Setenv(eirinistaging.EnvEiriniAddress, eiriniServer.URL())).To(Succeed())
 
 					Expect(os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))).To(Succeed())
 
@@ -426,8 +452,9 @@ var _ = Describe("StagingText", func() {
 					Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
 					cmd := exec.Command(binaries.DownloaderPath)
-					Eventually(gexec.Start(cmd, GinkgoWriter, GinkgoWriter)).Should(gexec.Exit())
-
+					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+					Expect(err).ToNot(HaveOccurred())
+					Eventually(session).Should(gexec.Exit())
 				})
 
 				JustBeforeEach(func() {
@@ -446,8 +473,7 @@ var _ = Describe("StagingText", func() {
 				Context("fails", func() {
 					BeforeEach(func() {
 						Expect(os.Setenv(eirinistaging.EnvWorkspaceDir, filepath.Join(workspaceDir, "bad-workspace-dir"))).To(Succeed())
-
-						server.AppendHandlers(
+						eiriniServer.AppendHandlers(
 							ghttp.CombineHandlers(
 								ghttp.VerifyRequest("PUT", responseURL),
 								verifyResponse(true, "failed to create droplet"),
@@ -456,7 +482,7 @@ var _ = Describe("StagingText", func() {
 					})
 
 					It("should send completion response with a failure", func() {
-						Expect(server.ReceivedRequests()).To(HaveLen(3))
+						Expect(eiriniServer.ReceivedRequests()).To(HaveLen(1))
 					})
 
 					It("should exit with non-zero exit code", func() {
@@ -482,9 +508,10 @@ var _ = Describe("StagingText", func() {
 							ghttp.RespondWith(http.StatusOK, appbitBytes),
 						),
 					)
-					server.Start()
+					server.HTTPTestServer.StartTLS()
+					eiriniServer.HTTPTestServer.StartTLS()
 
-					Expect(os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())).To(Succeed())
+					Expect(os.Setenv(eirinistaging.EnvEiriniAddress, eiriniServer.URL())).To(Succeed())
 
 					Expect(os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))).To(Succeed())
 
@@ -505,7 +532,9 @@ var _ = Describe("StagingText", func() {
 					Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
 					cmd := exec.Command(binaries.DownloaderPath)
-					Eventually(gexec.Start(cmd, GinkgoWriter, GinkgoWriter)).Should(gexec.Exit())
+					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+					Expect(err).ToNot(HaveOccurred())
+					Eventually(session).Should(gexec.Exit())
 				})
 
 				JustBeforeEach(func() {
@@ -544,9 +573,10 @@ var _ = Describe("StagingText", func() {
 							ghttp.RespondWith(http.StatusOK, appbitBytes),
 						),
 					)
-					server.Start()
+					server.HTTPTestServer.StartTLS()
+					eiriniServer.HTTPTestServer.StartTLS()
 
-					Expect(os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())).To(Succeed())
+					Expect(os.Setenv(eirinistaging.EnvEiriniAddress, eiriniServer.URL())).To(Succeed())
 
 					Expect(os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))).To(Succeed())
 
@@ -591,12 +621,12 @@ var _ = Describe("StagingText", func() {
 
 						cmd := exec.Command(binaries.DownloaderPath)
 						session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-						Eventually(session).Should(gexec.Exit())
 						Expect(err).NotTo(HaveOccurred())
+						Eventually(session).Should(gexec.Exit())
 					})
 
 					It("should fail with exit code 222", func() {
-						server.AppendHandlers(
+						eiriniServer.AppendHandlers(
 							ghttp.CombineHandlers(
 								ghttp.VerifyRequest("PUT", responseURL),
 								verifyResponse(true, "NoAppDetectedError: exit status 222"),
@@ -646,12 +676,12 @@ var _ = Describe("StagingText", func() {
 
 						cmd := exec.Command(binaries.DownloaderPath)
 						session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-						Eventually(session).Should(gexec.Exit())
 						Expect(err).NotTo(HaveOccurred())
+						Eventually(session).Should(gexec.Exit())
 					})
 
 					It("should fail with exit code 223", func() {
-						server.AppendHandlers(
+						eiriniServer.AppendHandlers(
 							ghttp.CombineHandlers(
 								ghttp.VerifyRequest("PUT", responseURL),
 								verifyResponse(true, "BuildpackCompileFailed: exit status 223"),
@@ -713,7 +743,7 @@ var _ = Describe("StagingText", func() {
 					})
 
 					It("should fail with exit code 224", func() {
-						server.AppendHandlers(
+						eiriniServer.AppendHandlers(
 							ghttp.CombineHandlers(
 								ghttp.VerifyRequest("PUT", responseURL),
 								verifyResponse(true, "BuildpackReleaseFailed: exit status 224"),
@@ -748,9 +778,10 @@ var _ = Describe("StagingText", func() {
 							ghttp.RespondWith(http.StatusOK, appbitBytes),
 						),
 					)
-					server.Start()
+					server.HTTPTestServer.StartTLS()
+					eiriniServer.HTTPTestServer.StartTLS()
 
-					Expect(os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())).To(Succeed())
+					Expect(os.Setenv(eirinistaging.EnvEiriniAddress, eiriniServer.URL())).To(Succeed())
 
 					Expect(os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))).To(Succeed())
 
@@ -816,6 +847,9 @@ var _ = Describe("StagingText", func() {
 						ghttp.VerifyRequest("POST", "/my-droplet"),
 						ghttp.RespondWith(http.StatusOK, ""),
 					),
+				)
+
+				eiriniServer.AppendHandlers(
 					ghttp.CombineHandlers(
 						ghttp.VerifyRequest("PUT", responseURL),
 						ghttp.RespondWith(http.StatusOK, ""),
@@ -824,9 +858,10 @@ var _ = Describe("StagingText", func() {
 					),
 				)
 
-				server.Start()
+				server.HTTPTestServer.StartTLS()
+				eiriniServer.HTTPTestServer.StartTLS()
 
-				Expect(os.Setenv(eirinistaging.EnvEiriniAddress, server.URL())).To(Succeed())
+				Expect(os.Setenv(eirinistaging.EnvEiriniAddress, eiriniServer.URL())).To(Succeed())
 
 				Expect(os.Setenv(eirinistaging.EnvDropletUploadURL, urljoiner.Join(server.URL(), "my-droplet"))).To(Succeed())
 
@@ -872,7 +907,7 @@ var _ = Describe("StagingText", func() {
 				BeforeEach(func() {
 					Expect(os.Setenv(eirinistaging.EnvOutputDropletLocation, path.Join(outputDir, "bad-location.tgz"))).To(Succeed())
 
-					server.SetHandler(2,
+					eiriniServer.SetHandler(0,
 						ghttp.CombineHandlers(
 							ghttp.VerifyRequest("PUT", responseURL),
 							verifyResponse(true, "no such file"),
@@ -881,18 +916,17 @@ var _ = Describe("StagingText", func() {
 				})
 
 				It("should send completion response with a failure", func() {
-					Expect(server.ReceivedRequests()).To(HaveLen(3))
+					Expect(eiriniServer.ReceivedRequests()).To(HaveLen(1))
 				})
 
 				It("should return an error", func() {
-					Expect(server.ReceivedRequests()).To(HaveLen(3))
 					Expect(session.ExitCode).NotTo(BeZero())
 				})
 			})
 
 			Context("and eirini returns response with failure status", func() {
 				BeforeEach(func() {
-					server.SetHandler(3,
+					eiriniServer.SetHandler(0,
 						ghttp.CombineHandlers(
 							ghttp.VerifyRequest("PUT", responseURL),
 							ghttp.RespondWith(http.StatusInternalServerError, ""),
@@ -901,7 +935,9 @@ var _ = Describe("StagingText", func() {
 				})
 
 				It("should return an error", func() {
-					Expect(server.ReceivedRequests()).To(HaveLen(4))
+					Expect(server.ReceivedRequests()).To(HaveLen(3))
+					Expect(eiriniServer.ReceivedRequests()).To(HaveLen(1))
+
 					Expect(session.ExitCode).NotTo(BeZero())
 				})
 			})

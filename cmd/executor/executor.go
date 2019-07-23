@@ -8,6 +8,7 @@ import (
 
 	eirinistaging "code.cloudfoundry.org/eirini-staging"
 	"code.cloudfoundry.org/eirini-staging/builder"
+	"code.cloudfoundry.org/eirini-staging/cmd"
 	"github.com/pkg/errors"
 )
 
@@ -24,9 +25,6 @@ func main() {
 	defer log.Println("executor-done")
 
 	buildpackCfg := os.Getenv(eirinistaging.EnvBuildpacks)
-	stagingGUID := os.Getenv(eirinistaging.EnvStagingGUID)
-	completionCallback := os.Getenv(eirinistaging.EnvCompletionCallback)
-	eiriniAddress := os.Getenv(eirinistaging.EnvEiriniAddress)
 	buildpacksDir, ok := os.LookupEnv(eirinistaging.EnvBuildpacksDir)
 	if !ok {
 		buildpacksDir = eirinistaging.RecipeBuildPacksDir
@@ -57,7 +55,12 @@ func main() {
 		downloadDir = eirinistaging.RecipeWorkspaceDir
 	}
 
-	responder := eirinistaging.NewResponder(stagingGUID, completionCallback, eiriniAddress)
+	certPath, ok := os.LookupEnv(eirinistaging.EnvCertsPath)
+	if !ok {
+		certPath = eirinistaging.CCCertsMountPath
+	}
+
+	responder := cmd.CreateResponder(certPath)
 
 	buildDir, err := extract(downloadDir)
 	if err != nil {

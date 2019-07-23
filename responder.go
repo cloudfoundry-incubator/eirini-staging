@@ -10,26 +10,33 @@ import (
 
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini-staging/builder"
+	"code.cloudfoundry.org/eirini-staging/util"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	"github.com/pkg/errors"
 )
 
 type Responder struct {
-	StagingGUID        string
-	CompletionCallback string
-	EiriniAddr         string
+	stagingGUID        string
+	completionCallback string
+	eiriniAddr         string
+	cACert             string
+	clientCrt          string
+	clientKey          string
 }
 
-func NewResponder(stagingGUID string, completionCallback string, eiriniAddr string) Responder {
+func NewResponder(stagingGUID, completionCallback, eiriniAddr, caCert, clientCrt, clientKey string) Responder {
 	return Responder{
-		StagingGUID:        stagingGUID,
-		CompletionCallback: completionCallback,
-		EiriniAddr:         eiriniAddr,
+		stagingGUID:        stagingGUID,
+		completionCallback: completionCallback,
+		eiriniAddr:         eiriniAddr,
+		cACert:             caCert,
+		clientCrt:          clientCrt,
+		clientKey:          clientKey,
 	}
 }
 
 func (r Responder) RespondWithFailure(failure error) {
-	cbResponse := r.createFailureResponse(failure, r.StagingGUID, r.CompletionCallback)
+	cbResponse := r.createFailureResponse(failure, r.stagingGUID, r.completionCallback)
 
 	if completeErr := r.sendCompleteResponse(cbResponse); completeErr != nil {
 		fmt.Println("Error processsing completion callback:", completeErr.Error())
@@ -67,7 +74,7 @@ func (r Responder) createSuccessResponse(outputMetadataLocation string, buildpac
 	}
 
 	annotation := cc_messages.StagingTaskAnnotation{
-		CompletionCallback: r.CompletionCallback,
+		CompletionCallback: r.completionCallback,
 	}
 
 	annotationJSON, err := json.Marshal(annotation)
@@ -76,7 +83,7 @@ func (r Responder) createSuccessResponse(outputMetadataLocation string, buildpac
 	}
 
 	return &models.TaskCallbackResponse{
-		TaskGuid:   r.StagingGUID,
+		TaskGuid:   r.stagingGUID,
 		Result:     string(result),
 		Failed:     false,
 		Annotation: string(annotationJSON),
@@ -120,7 +127,7 @@ func (r Responder) sendCompleteResponse(response *models.TaskCallbackResponse) e
 		panic(err)
 	}
 
-	uri := fmt.Sprintf("%s/stage/%s/completed", r.EiriniAddr, response.TaskGuid)
+	uri := fmt.Sprintf("%s/stage/%s/completed", r.eiriniAddr, response.TaskGuid)
 
 	req, err := http.NewRequest("PUT", uri, bytes.NewBuffer(responseJSON))
 	if err != nil {
@@ -128,7 +135,10 @@ func (r Responder) sendCompleteResponse(response *models.TaskCallbackResponse) e
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	client := http.Client{}
+	client, err := util.CreateTLSHTTPClient([]util.CertPaths{
+		{Crt: r.clientCrt, Key: r.clientKey, Ca: r.cACert},
+	})
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return errors.Wrap(err, "request failed")
