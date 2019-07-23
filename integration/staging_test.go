@@ -865,7 +865,7 @@ var _ = Describe("StagingText", func() {
 			})
 
 			It("should successfully upload the droplet", func() {
-				Expect(session.ExitCode()).To(BeZero())
+				Expect(session).To(gexec.Exit(0))
 			})
 
 			Context("fails", func() {
