@@ -10,6 +10,7 @@ import (
 
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/eirini-staging/builder"
+	"code.cloudfoundry.org/eirini-staging/util"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
 	"github.com/pkg/errors"
 )
@@ -18,6 +19,9 @@ type Responder struct {
 	StagingGUID        string
 	CompletionCallback string
 	EiriniAddr         string
+	CACert             string
+	ClientCrt          string
+	ClientKey          string
 }
 
 func NewResponder(stagingGUID string, completionCallback string, eiriniAddr string) Responder {
@@ -128,7 +132,10 @@ func (r Responder) sendCompleteResponse(response *models.TaskCallbackResponse) e
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	client := http.Client{}
+	client, err := util.CreateTLSHTTPClient([]util.CertPaths{
+		{Crt: r.ClientCrt, Key: r.ClientKey, Ca: r.CACert},
+	})
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return errors.Wrap(err, "request failed")
