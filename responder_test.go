@@ -5,10 +5,12 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	"code.cloudfoundry.org/bbs/models"
 	. "code.cloudfoundry.org/eirini-staging"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
+	"code.cloudfoundry.org/tlsconfig"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
@@ -52,10 +54,7 @@ var _ = Describe("Responder", func() {
 			clientKey := filepath.Join(certsPath, "eirini-client.key")
 			eiriniAddr := server.URL()
 
-			responder = NewResponder(stagingGUID, completionCallback, eiriniAddr)
-			responder.CACert = caCertPath
-			responder.ClientCrt = clientCert
-			responder.ClientKey = clientKey
+			responder = NewResponder(stagingGUID, completionCallback, eiriniAddr, caCertPath, clientCert, clientKey)
 		})
 
 		AfterEach(func() {

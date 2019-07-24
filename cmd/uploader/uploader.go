@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	eirinistaging "code.cloudfoundry.org/eirini-staging"
+	"code.cloudfoundry.org/eirini-staging/cmd"
 	"code.cloudfoundry.org/eirini-staging/util"
 )
 
@@ -15,9 +16,6 @@ func main() {
 	defer log.Println("uploader-done")
 
 	buildpacksConfig := os.Getenv(eirinistaging.EnvBuildpacks)
-	stagingGUID := os.Getenv(eirinistaging.EnvStagingGUID)
-	completionCallback := os.Getenv(eirinistaging.EnvCompletionCallback)
-	eiriniAddress := os.Getenv(eirinistaging.EnvEiriniAddress)
 	dropletUploadURL := os.Getenv(eirinistaging.EnvDropletUploadURL)
 
 	certPath, ok := os.LookupEnv(eirinistaging.EnvCertsPath)
@@ -35,7 +33,7 @@ func main() {
 		metadataLocation = eirinistaging.RecipeOutputMetadataLocation
 	}
 
-	responder := eirinistaging.NewResponder(stagingGUID, completionCallback, eiriniAddress)
+	responder := cmd.CreateResponder(certPath)
 
 	client, err := createUploaderHTTPClient(certPath)
 	if err != nil {

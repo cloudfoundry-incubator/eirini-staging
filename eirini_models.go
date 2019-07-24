@@ -42,6 +42,10 @@ const (
 	CCUploaderCertName    = "cc-uploader-crt"
 	CCUploaderKeyName     = "cc-uploader-crt-key"
 	CCInternalCACertName  = "internal-ca-cert"
+
+	EiriniCACertName = "eirini-ca-crt"
+	EiriniClientCert = "eirini-client-crt"
+	EiriniClientKey  = "eirini-client-key"
 )
 
 //go:generate counterfeiter . Extractor
