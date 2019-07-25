@@ -532,7 +532,9 @@ var _ = Describe("StagingText", func() {
 					Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
 					cmd := exec.Command(binaries.DownloaderPath)
-					Eventually(gexec.Start(cmd, GinkgoWriter, GinkgoWriter)).Should(gexec.Exit())
+					session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+					Expect(err).ToNot(HaveOccurred())
+					Eventually(session).Should(gexec.Exit())
 				})
 
 				JustBeforeEach(func() {
