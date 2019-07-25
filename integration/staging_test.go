@@ -139,6 +139,8 @@ var _ = Describe("StagingText", func() {
 		Expect(os.Unsetenv(eirinistaging.EnvOutputMetadataLocation)).To(Succeed())
 		Expect(os.Unsetenv(eirinistaging.EnvOutputBuildArtifactsCache)).To(Succeed())
 		Expect(os.Unsetenv(eirinistaging.EnvEiriniAddress)).To(Succeed())
+		server.Close()
+		eiriniServer.Close()
 	})
 
 	Context("when a droplet needs building...", func() {
