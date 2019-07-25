@@ -33,7 +33,10 @@ func main() {
 		metadataLocation = eirinistaging.RecipeOutputMetadataLocation
 	}
 
-	responder := cmd.CreateResponder(certPath)
+	responder, err := cmd.CreateResponder(certPath)
+	if err != nil {
+		log.Fatal("failed to initialize responder", err)
+	}
 
 	client, err := createUploaderHTTPClient(certPath)
 	if err != nil {

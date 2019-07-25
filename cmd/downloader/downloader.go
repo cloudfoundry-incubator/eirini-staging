@@ -33,7 +33,10 @@ func main() {
 		workspaceDir = eirinistaging.RecipeWorkspaceDir
 	}
 
-	responder := cmd.CreateResponder(certPath)
+	responder, err := cmd.CreateResponder(certPath)
+	if err != nil {
+		log.Fatal("failed to initialize responder", err)
+	}
 	downloadClient, err := createDownloadHTTPClient(certPath)
 	if err != nil {
 		responder.RespondWithFailure(err)

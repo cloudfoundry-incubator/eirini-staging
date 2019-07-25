@@ -42,23 +42,61 @@ var _ = Describe("Responder", func() {
 			Expect(err).NotTo(HaveOccurred())
 			server.HTTPTestServer.TLS = tlsConfig
 			server.HTTPTestServer.StartTLS()
-		})
 
-		JustBeforeEach(func() {
 			stagingGUID := "staging-guid"
 			completionCallback := "completion-call-me-back"
-			certsPath, err := filepath.Abs("integration/testdata/certs")
-			Expect(err).NotTo(HaveOccurred())
-			caCertPath := filepath.Join(certsPath, "eirini-ca.crt")
-			clientCert := filepath.Join(certsPath, "eirini-client.crt")
+			eiriniCACertPath := filepath.Join(certsPath, "eirini-ca.crt")
+			eiriniClientCert := filepath.Join(certsPath, "eirini-client.crt")
 			clientKey := filepath.Join(certsPath, "eirini-client.key")
 			eiriniAddr := server.URL()
 
-			responder = NewResponder(stagingGUID, completionCallback, eiriniAddr, caCertPath, clientCert, clientKey)
+			responder, _ = NewResponder(stagingGUID, completionCallback, eiriniAddr, eiriniCACertPath, eiriniClientCert, clientKey)
 		})
 
 		AfterEach(func() {
 			server.Close()
+		})
+
+		Context("when provided tls certs are missing", func() {
+
+			It("should return an error", func() {
+				_, initErr := NewResponder("guid", "callback", "0.0.0.0:1", "does-not-exist", "does-not-exist", "does-not-exist")
+				Expect(initErr).To(MatchError(ContainSubstring("failed to create http client")))
+			})
+		})
+
+		Context("when the provided certificates are not valid for the server", func() {
+			BeforeEach(func() {
+				server.RouteToHandler("PUT", "/stage/staging-guid/completed",
+					ghttp.VerifyJSON(`{
+						"task_guid": "staging-guid",
+						"failed": false,
+						"failure_reason": "",
+						"result": "",
+						"created_at": 0
+					}`),
+				)
+			})
+
+			It("should return an error", func() {
+				resp := models.TaskCallbackResponse{
+					TaskGuid: "staging-guid",
+				}
+
+				stagingGUID := "staging-guid"
+				completionCallback := "completion-call-me-back"
+
+				certsPath, err := filepath.Abs("integration/testdata/certs")
+				eiriniCACertPath := filepath.Join(certsPath, "internal-ca-cert")
+				eiriniClientCert := filepath.Join(certsPath, "cc-server-crt")
+				clientKey := filepath.Join(certsPath, "cc-server-crt-key")
+				eiriniAddr := server.URL()
+
+				responder, _ = NewResponder(stagingGUID, completionCallback, eiriniAddr, eiriniCACertPath, eiriniClientCert, clientKey)
+				err = responder.RespondWithSuccess(&resp)
+				Expect(err).To(MatchError(ContainSubstring("request failed")))
+			})
+
 		})
 
 		Context("when there is an error", func() {
@@ -76,8 +114,7 @@ var _ = Describe("Responder", func() {
 			})
 
 			It("should respond with failure", func() {
-				err = errors.New("sploded")
-				responder.RespondWithFailure(err)
+				responder.RespondWithFailure(errors.New("sploded"))
 			})
 		})
 
@@ -126,9 +163,7 @@ var _ = Describe("Responder", func() {
 						"created_at": 0
 					}`),
 					)
-				})
 
-				JustBeforeEach(func() {
 					resultsFilePath = resultsFile(resultContents)
 
 					buildpack := cc_messages.Buildpack{}

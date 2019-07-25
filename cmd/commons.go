@@ -7,7 +7,7 @@ import (
 	eirinistaging "code.cloudfoundry.org/eirini-staging"
 )
 
-func CreateResponder(certPath string) eirinistaging.Responder {
+func CreateResponder(certPath string) (eirinistaging.Responder, error) {
 	stagingGUID := os.Getenv(eirinistaging.EnvStagingGUID)
 	completionCallback := os.Getenv(eirinistaging.EnvCompletionCallback)
 	eiriniAddress := os.Getenv(eirinistaging.EnvEiriniAddress)

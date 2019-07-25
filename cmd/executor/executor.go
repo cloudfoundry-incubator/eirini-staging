@@ -60,7 +60,10 @@ func main() {
 		certPath = eirinistaging.CCCertsMountPath
 	}
 
-	responder := cmd.CreateResponder(certPath)
+	responder, err := cmd.CreateResponder(certPath)
+	if err != nil {
+		log.Fatal("failed to initialize responder", err)
+	}
 
 	buildDir, err := extract(downloadDir)
 	if err != nil {

@@ -19,20 +19,23 @@ type Responder struct {
 	stagingGUID        string
 	completionCallback string
 	eiriniAddr         string
-	cACert             string
-	clientCrt          string
-	clientKey          string
+	client             *http.Client
 }
 
-func NewResponder(stagingGUID, completionCallback, eiriniAddr, caCert, clientCrt, clientKey string) Responder {
+func NewResponder(stagingGUID, completionCallback, eiriniAddr, caCert, clientCrt, clientKey string) (Responder, error) {
+	client, err := util.CreateTLSHTTPClient([]util.CertPaths{
+		{Crt: clientCrt, Key: clientKey, Ca: caCert},
+	})
+	if err != nil {
+		return Responder{}, errors.Wrap(err, "failed to create http client")
+	}
+
 	return Responder{
 		stagingGUID:        stagingGUID,
 		completionCallback: completionCallback,
 		eiriniAddr:         eiriniAddr,
-		cACert:             caCert,
-		clientCrt:          clientCrt,
-		clientKey:          clientKey,
-	}
+		client:             client,
+	}, nil
 }
 
 func (r Responder) RespondWithFailure(failure error) {
@@ -135,11 +138,7 @@ func (r Responder) sendCompleteResponse(response *models.TaskCallbackResponse) e
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	client, err := util.CreateTLSHTTPClient([]util.CertPaths{
-		{Crt: r.clientCrt, Key: r.clientKey, Ca: r.cACert},
-	})
-
-	resp, err := client.Do(req)
+	resp, err := r.client.Do(req)
 	if err != nil {
 		return errors.Wrap(err, "request failed")
 	}
