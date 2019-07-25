@@ -341,7 +341,7 @@ var _ = Describe("StagingText", func() {
 					Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
 					cmd := exec.Command(binaries.DownloaderPath)
-					session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 					Expect(err).ToNot(HaveOccurred())
 					Eventually(session).Should(gexec.Exit())
 				})
@@ -452,7 +452,7 @@ var _ = Describe("StagingText", func() {
 					Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
 					cmd := exec.Command(binaries.DownloaderPath)
-					session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 					Expect(err).ToNot(HaveOccurred())
 					Eventually(session).Should(gexec.Exit())
 				})
@@ -532,7 +532,7 @@ var _ = Describe("StagingText", func() {
 					Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
 					cmd := exec.Command(binaries.DownloaderPath)
-					session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 					Expect(err).ToNot(HaveOccurred())
 					Eventually(session).Should(gexec.Exit())
 				})
