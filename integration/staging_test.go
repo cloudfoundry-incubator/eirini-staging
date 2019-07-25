@@ -2,7 +2,6 @@ package recipe_test
 
 import (
 	"crypto/md5"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -37,66 +36,37 @@ var _ = Describe("StagingText", func() {
 	)
 
 	var (
-		err             error
-		server          *ghttp.Server
-		eiriniServer    *ghttp.Server
-		appbitBytes     []byte
-		buildpackBytes  []byte
-		session         *gexec.Session
-		buildpacks      []builder.Buildpack
-		buildpacksDir   string
-		workspaceDir    string
-		outputDir       string
-		cacheDir        string
-		certsPath       string
-		tlsConfig       *tls.Config
-		eiriniTLSConfig *tls.Config
-		buildpackJSON   []byte
-		actualBytes     []byte
-		expectedBytes   []byte
+		err            error
+		server         *ghttp.Server
+		eiriniServer   *ghttp.Server
+		appbitBytes    []byte
+		buildpackBytes []byte
+		session        *gexec.Session
+		buildpacks     []builder.Buildpack
+		buildpacksDir  string
+		workspaceDir   string
+		outputDir      string
+		cacheDir       string
+		certsPath      string
+		buildpackJSON  []byte
+		actualBytes    []byte
+		expectedBytes  []byte
 	)
 
-	BeforeEach(func() {
+	createTempDir := func() string {
+		tempDir, createErr := ioutil.TempDir("", "")
+		Expect(createErr).NotTo(HaveOccurred())
+		Expect(chownR(tempDir, "vcap", "vcap")).To(Succeed())
 
-		workspaceDir, err = ioutil.TempDir("", "workspace")
-		Expect(err).NotTo(HaveOccurred())
-		Expect(os.Setenv(eirinistaging.EnvWorkspaceDir, workspaceDir)).To(Succeed())
+		return tempDir
+	}
 
-		Expect(chownR(workspaceDir, "vcap", "vcap")).To(Succeed())
+	createTestServer := func(certName, keyName, caCertName string) *ghttp.Server {
+		certPath := filepath.Join(certsPath, certName)
+		keyPath := filepath.Join(certsPath, keyName)
+		caCertPath := filepath.Join(certsPath, caCertName)
 
-		outputDir, err = ioutil.TempDir("", "out")
-		Expect(err).NotTo(HaveOccurred())
-		Expect(os.Setenv(eirinistaging.EnvOutputDropletLocation, path.Join(outputDir, "droplet.tgz"))).To(Succeed())
-		Expect(os.Setenv(eirinistaging.EnvOutputMetadataLocation, path.Join(outputDir, "result.json"))).To(Succeed())
-
-		Expect(os.Setenv("CF_STACK", "cflinuxfs2")).To(Succeed())
-
-		Expect(chownR(outputDir, "vcap", "vcap")).To(Succeed())
-
-		cacheDir, err = ioutil.TempDir("", "cache")
-		Expect(err).NotTo(HaveOccurred())
-		Expect(os.Setenv(eirinistaging.EnvOutputBuildArtifactsCache, path.Join(cacheDir, "cache.tgz"))).To(Succeed())
-
-		Expect(chownR(cacheDir, "vcap", "vcap")).To(Succeed())
-
-		buildpacksDir, err = ioutil.TempDir("", "buildpacks")
-		Expect(err).NotTo(HaveOccurred())
-		Expect(os.Setenv(eirinistaging.EnvBuildpacksDir, buildpacksDir)).To(Succeed())
-
-		Expect(chownR(buildpacksDir, "vcap", "vcap")).To(Succeed())
-
-		Expect(os.Setenv(eirinistaging.EnvStagingGUID, stagingGUID)).To(Succeed())
-
-		Expect(os.Setenv(eirinistaging.EnvCompletionCallback, completionCallback)).To(Succeed())
-
-		certsPath, err = filepath.Abs("testdata/certs")
-		Expect(err).NotTo(HaveOccurred())
-
-		certPath := filepath.Join(certsPath, "cc-server-crt")
-		keyPath := filepath.Join(certsPath, "cc-server-crt-key")
-		caCertPath := filepath.Join(certsPath, "internal-ca-cert")
-
-		tlsConfig, err = tlsconfig.Build(
+		tlsConf, err := tlsconfig.Build(
 			tlsconfig.WithInternalServiceDefaults(),
 			tlsconfig.WithIdentityFromFile(certPath, keyPath),
 		).Server(
@@ -104,21 +74,32 @@ var _ = Describe("StagingText", func() {
 		)
 		Expect(err).NotTo(HaveOccurred())
 
-		server = ghttp.NewUnstartedServer()
-		server.HTTPTestServer.TLS = tlsConfig
+		testServer := ghttp.NewUnstartedServer()
+		testServer.HTTPTestServer.TLS = tlsConf
 
-		eiriniCertPath := filepath.Join(certsPath, "eirini.crt")
-		eiriniKeyPath := filepath.Join(certsPath, "eirini.key")
-		eiriniCACertPath := filepath.Join(certsPath, "clientCA.crt")
-		eiriniTLSConfig, err = tlsconfig.Build(
-			tlsconfig.WithInternalServiceDefaults(),
-			tlsconfig.WithIdentityFromFile(eiriniCertPath, eiriniKeyPath),
-		).Server(
-			tlsconfig.WithClientAuthenticationFromFile(eiriniCACertPath),
-		)
+		return testServer
+	}
 
-		eiriniServer = ghttp.NewUnstartedServer()
-		eiriniServer.HTTPTestServer.TLS = eiriniTLSConfig
+	BeforeEach(func() {
+		workspaceDir = createTempDir()
+		outputDir = createTempDir()
+		cacheDir = createTempDir()
+		buildpacksDir = createTempDir()
+
+		Expect(os.Setenv(eirinistaging.EnvWorkspaceDir, workspaceDir)).To(Succeed())
+		Expect(os.Setenv(eirinistaging.EnvOutputDropletLocation, path.Join(outputDir, "droplet.tgz"))).To(Succeed())
+		Expect(os.Setenv(eirinistaging.EnvOutputMetadataLocation, path.Join(outputDir, "result.json"))).To(Succeed())
+		Expect(os.Setenv("CF_STACK", "cflinuxfs2")).To(Succeed())
+		Expect(os.Setenv(eirinistaging.EnvOutputBuildArtifactsCache, path.Join(cacheDir, "cache.tgz"))).To(Succeed())
+		Expect(os.Setenv(eirinistaging.EnvBuildpacksDir, buildpacksDir)).To(Succeed())
+		Expect(os.Setenv(eirinistaging.EnvStagingGUID, stagingGUID)).To(Succeed())
+		Expect(os.Setenv(eirinistaging.EnvCompletionCallback, completionCallback)).To(Succeed())
+
+		certsPath, err = filepath.Abs("testdata/certs")
+		Expect(err).NotTo(HaveOccurred())
+
+		server = createTestServer("cc-server-crt", "cc-server-crt-key", "internal-ca-cert")
+		eiriniServer = createTestServer("eirini.crt", "eirini.key", "clientCA.crt")
 	})
 
 	AfterEach(func() {
