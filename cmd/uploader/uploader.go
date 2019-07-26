@@ -67,7 +67,7 @@ func main() {
 }
 
 func createUploaderHTTPClient(certPath string) (*http.Client, error) {
-	cacert := filepath.Join(certPath, eirinistaging.CCInternalCACertName)
+	cacert := filepath.Join(certPath, eirinistaging.CACertName)
 	cert := filepath.Join(certPath, eirinistaging.CCAPICertName)
 	key := filepath.Join(certPath, eirinistaging.CCAPIKeyName)
 

@@ -12,7 +12,7 @@ func CreateResponder(certPath string) (eirinistaging.Responder, error) {
 	completionCallback := os.Getenv(eirinistaging.EnvCompletionCallback)
 	eiriniAddress := os.Getenv(eirinistaging.EnvEiriniAddress)
 
-	cacert := filepath.Join(certPath, eirinistaging.EiriniCACertName)
+	cacert := filepath.Join(certPath, eirinistaging.CACertName)
 	cert := filepath.Join(certPath, eirinistaging.EiriniClientCert)
 	key := filepath.Join(certPath, eirinistaging.EiriniClientKey)
 

@@ -31,7 +31,7 @@ var _ = Describe("Responder", func() {
 
 			certPath := filepath.Join(certsPath, "eirini.crt")
 			keyPath := filepath.Join(certsPath, "eirini.key")
-			caCertPath := filepath.Join(certsPath, "clientCA.crt")
+			caCertPath := filepath.Join(certsPath, CACertName)
 
 			tlsConfig, err := tlsconfig.Build(
 				tlsconfig.WithInternalServiceDefaults(),
@@ -45,9 +45,9 @@ var _ = Describe("Responder", func() {
 
 			stagingGUID := "staging-guid"
 			completionCallback := "completion-call-me-back"
-			eiriniCACertPath := filepath.Join(certsPath, "eirini-ca.crt")
-			eiriniClientCert := filepath.Join(certsPath, "eirini-client.crt")
-			clientKey := filepath.Join(certsPath, "eirini-client.key")
+			eiriniCACertPath := filepath.Join(certsPath, CACertName)
+			eiriniClientCert := filepath.Join(certsPath, EiriniClientCert)
+			clientKey := filepath.Join(certsPath, EiriniClientKey)
 			eiriniAddr := server.URL()
 
 			responder, _ = NewResponder(stagingGUID, completionCallback, eiriniAddr, eiriniCACertPath, eiriniClientCert, clientKey)
@@ -88,8 +88,8 @@ var _ = Describe("Responder", func() {
 
 				certsPath, err := filepath.Abs("integration/testdata/certs")
 				eiriniCACertPath := filepath.Join(certsPath, "internal-ca-cert")
-				eiriniClientCert := filepath.Join(certsPath, "cc-server-crt")
-				clientKey := filepath.Join(certsPath, "cc-server-crt-key")
+				eiriniClientCert := filepath.Join(certsPath, "not-exactly-valid.crt")
+				clientKey := filepath.Join(certsPath, "not-exactly-valid.key")
 				eiriniAddr := server.URL()
 
 				responder, _ = NewResponder(stagingGUID, completionCallback, eiriniAddr, eiriniCACertPath, eiriniClientCert, clientKey)

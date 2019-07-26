@@ -99,7 +99,7 @@ var _ = Describe("StagingText", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		server = createTestServer("cc-server-crt", "cc-server-crt-key", "internal-ca-cert")
-		eiriniServer = createTestServer("eirini.crt", "eirini.key", "clientCA.crt")
+		eiriniServer = createTestServer("eirini.crt", "eirini.key", "internal-ca-cert")
 	})
 
 	AfterEach(func() {
