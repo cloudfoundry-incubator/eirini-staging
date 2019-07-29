@@ -1,6 +1,9 @@
 IMAGE_USER ?= eirini
 IMAGE_TAG ?= latest
 
+lint:
+	./scripts/lint.sh
+
 test:
 	./scripts/test.sh
 
