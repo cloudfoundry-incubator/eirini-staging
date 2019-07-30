@@ -19,7 +19,6 @@ import (
 var _ = Describe("Responder", func() {
 	Context("when responding to cc-uploader", func() {
 		var (
-			err       error
 			server    *ghttp.Server
 			responder Responder
 		)
@@ -87,6 +86,7 @@ var _ = Describe("Responder", func() {
 				completionCallback := "completion-call-me-back"
 
 				certsPath, err := filepath.Abs("integration/testdata/certs")
+				Expect(err).ToNot(HaveOccurred())
 				eiriniCACertPath := filepath.Join(certsPath, "internal-ca-cert")
 				eiriniClientCert := filepath.Join(certsPath, "not-exactly-valid.crt")
 				clientKey := filepath.Join(certsPath, "not-exactly-valid.key")
@@ -129,7 +129,7 @@ var _ = Describe("Responder", func() {
 			Context("when preparing the response results", func() {
 				Context("when the results file is missing", func() {
 					It("should error with missing file msg", func() {
-						_, err = responder.PrepareSuccessResponse(resultsFilePath, string(buildpacks))
+						_, err := responder.PrepareSuccessResponse(resultsFilePath, string(buildpacks))
 						Expect(err).To(HaveOccurred())
 						Expect(err.Error()).To(ContainSubstring("failed to read result.json"))
 					})
@@ -139,7 +139,7 @@ var _ = Describe("Responder", func() {
 					It("should error when unmarhsaling the content", func() {
 						resultsFilePath = resultsFile(resultContents)
 						buildpack := cc_messages.Buildpack{}
-						buildpacks, err = json.Marshal([]cc_messages.Buildpack{buildpack})
+						buildpacks, err := json.Marshal([]cc_messages.Buildpack{buildpack})
 						Expect(err).NotTo(HaveOccurred())
 
 						_, err = responder.PrepareSuccessResponse(resultsFilePath, string(buildpacks))
@@ -166,9 +166,6 @@ var _ = Describe("Responder", func() {
 
 					resultsFilePath = resultsFile(resultContents)
 
-					buildpack := cc_messages.Buildpack{}
-					buildpacks, err = json.Marshal([]cc_messages.Buildpack{buildpack})
-					Expect(err).NotTo(HaveOccurred())
 				})
 
 				AfterEach(func() {
@@ -176,8 +173,11 @@ var _ = Describe("Responder", func() {
 				})
 
 				It("should respond with failure", func() {
-					var resp *models.TaskCallbackResponse
-					resp, err = responder.PrepareSuccessResponse(resultsFilePath, string(buildpacks))
+					buildpack := cc_messages.Buildpack{}
+					buildpacks, err := json.Marshal([]cc_messages.Buildpack{buildpack})
+					Expect(err).NotTo(HaveOccurred())
+
+					resp, err := responder.PrepareSuccessResponse(resultsFilePath, string(buildpacks))
 					Expect(err).NotTo(HaveOccurred())
 					err = responder.RespondWithSuccess(resp)
 					Expect(err).NotTo(HaveOccurred())

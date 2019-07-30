@@ -66,13 +66,13 @@ var _ = Describe("StagingText", func() {
 		keyPath := filepath.Join(certsPath, keyName)
 		caCertPath := filepath.Join(certsPath, caCertName)
 
-		tlsConf, err := tlsconfig.Build(
+		tlsConf, tlsErr := tlsconfig.Build(
 			tlsconfig.WithInternalServiceDefaults(),
 			tlsconfig.WithIdentityFromFile(certPath, keyPath),
 		).Server(
 			tlsconfig.WithClientAuthenticationFromFile(caCertPath),
 		)
-		Expect(err).NotTo(HaveOccurred())
+		Expect(tlsErr).NotTo(HaveOccurred())
 
 		testServer := ghttp.NewUnstartedServer()
 		testServer.HTTPTestServer.TLS = tlsConf
