@@ -51,7 +51,7 @@ func (d *PackageInstaller) download(downloadURL string, filepath string) error {
 
 	resp, err := d.client.Get(downloadURL)
 	if err != nil {
-		return errors.Wrap(err, "failed to perform request")
+		return errors.Wrap(err, fmt.Sprintf("failed to perform get request on: %s", downloadURL))
 	}
 	defer resp.Body.Close()
 

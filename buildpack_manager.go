@@ -63,7 +63,7 @@ func (b *BuildpackManager) Install() error {
 
 	for _, buildpack := range buildpacks {
 		if err := b.install(buildpack); err != nil {
-			return err
+			return fmt.Errorf("installing buildpack %s: %s failed: %s", buildpack.Name, buildpack.URL, err.Error())
 		}
 	}
 
