@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	eirinistaging "code.cloudfoundry.org/eirini-staging"
+	"code.cloudfoundry.org/eirini-staging/cmd"
 	"code.cloudfoundry.org/eirini-staging/util"
 )
 
@@ -14,9 +15,6 @@ func main() {
 	log.Println("downloader-started")
 	defer log.Println("downloader-done")
 
-	stagingGUID := os.Getenv(eirinistaging.EnvStagingGUID)
-	completionCallback := os.Getenv(eirinistaging.EnvCompletionCallback)
-	eiriniAddress := os.Getenv(eirinistaging.EnvEiriniAddress)
 	appBitsDownloadURL := os.Getenv(eirinistaging.EnvDownloadURL)
 	buildpacksJSON := os.Getenv(eirinistaging.EnvBuildpacks)
 
@@ -35,8 +33,10 @@ func main() {
 		workspaceDir = eirinistaging.RecipeWorkspaceDir
 	}
 
-	responder := eirinistaging.NewResponder(stagingGUID, completionCallback, eiriniAddress)
-
+	responder, err := cmd.CreateResponder(certPath)
+	if err != nil {
+		log.Fatal("failed to initialize responder", err)
+	}
 	downloadClient, err := createDownloadHTTPClient(certPath)
 	if err != nil {
 		responder.RespondWithFailure(err)
@@ -58,7 +58,7 @@ func main() {
 }
 
 func createDownloadHTTPClient(certPath string) (*http.Client, error) {
-	cacert := filepath.Join(certPath, eirinistaging.CCInternalCACertName)
+	cacert := filepath.Join(certPath, eirinistaging.CACertName)
 	cert := filepath.Join(certPath, eirinistaging.CCAPICertName)
 	key := filepath.Join(certPath, eirinistaging.CCAPIKeyName)
 

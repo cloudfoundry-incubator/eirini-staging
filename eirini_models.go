@@ -35,13 +35,15 @@ const (
 	BuildArtifactsCacheDir          = "/tmp/cache"
 
 	CCUploaderInternalURL = "cc-uploader.service.cf.internal"
-	CCCertsMountPath      = "/etc/config/certs"
-	CCCertsVolumeName     = "cc-certs-volume"
-	CCAPICertName         = "cc-server-crt"
-	CCAPIKeyName          = "cc-server-crt-key"
-	CCUploaderCertName    = "cc-uploader-crt"
-	CCUploaderKeyName     = "cc-uploader-crt-key"
-	CCInternalCACertName  = "internal-ca-cert"
+
+	CACertName = "internal-ca-cert"
+
+	CCCertsMountPath = "/etc/config/certs"
+	CCAPICertName    = "cc-server-crt"
+	CCAPIKeyName     = "cc-server-crt-key"
+
+	EiriniClientCert = "eirini-client-crt"
+	EiriniClientKey  = "eirini-client-crt-key"
 )
 
 //go:generate counterfeiter . Extractor

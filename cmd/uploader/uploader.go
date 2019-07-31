@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	eirinistaging "code.cloudfoundry.org/eirini-staging"
+	"code.cloudfoundry.org/eirini-staging/cmd"
 	"code.cloudfoundry.org/eirini-staging/util"
 )
 
@@ -15,9 +16,6 @@ func main() {
 	defer log.Println("uploader-done")
 
 	buildpacksConfig := os.Getenv(eirinistaging.EnvBuildpacks)
-	stagingGUID := os.Getenv(eirinistaging.EnvStagingGUID)
-	completionCallback := os.Getenv(eirinistaging.EnvCompletionCallback)
-	eiriniAddress := os.Getenv(eirinistaging.EnvEiriniAddress)
 	dropletUploadURL := os.Getenv(eirinistaging.EnvDropletUploadURL)
 
 	certPath, ok := os.LookupEnv(eirinistaging.EnvCertsPath)
@@ -35,7 +33,10 @@ func main() {
 		metadataLocation = eirinistaging.RecipeOutputMetadataLocation
 	}
 
-	responder := eirinistaging.NewResponder(stagingGUID, completionCallback, eiriniAddress)
+	responder, err := cmd.CreateResponder(certPath)
+	if err != nil {
+		log.Fatal("failed to initialize responder", err)
+	}
 
 	client, err := createUploaderHTTPClient(certPath)
 	if err != nil {
@@ -66,7 +67,7 @@ func main() {
 }
 
 func createUploaderHTTPClient(certPath string) (*http.Client, error) {
-	cacert := filepath.Join(certPath, eirinistaging.CCInternalCACertName)
+	cacert := filepath.Join(certPath, eirinistaging.CACertName)
 	cert := filepath.Join(certPath, eirinistaging.CCAPICertName)
 	key := filepath.Join(certPath, eirinistaging.CCAPIKeyName)
 

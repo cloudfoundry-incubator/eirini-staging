@@ -5,10 +5,12 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	"code.cloudfoundry.org/bbs/models"
 	. "code.cloudfoundry.org/eirini-staging"
 	"code.cloudfoundry.org/runtimeschema/cc_messages"
+	"code.cloudfoundry.org/tlsconfig"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
@@ -17,25 +19,84 @@ import (
 var _ = Describe("Responder", func() {
 	Context("when responding to cc-uploader", func() {
 		var (
-			err       error
 			server    *ghttp.Server
 			responder Responder
 		)
 
 		BeforeEach(func() {
-			server = ghttp.NewServer()
-		})
+			server = ghttp.NewUnstartedServer()
+			certsPath, err := filepath.Abs("integration/testdata/certs")
+			Expect(err).NotTo(HaveOccurred())
 
-		JustBeforeEach(func() {
+			certPath := filepath.Join(certsPath, "eirini.crt")
+			keyPath := filepath.Join(certsPath, "eirini.key")
+			caCertPath := filepath.Join(certsPath, CACertName)
+
+			tlsConfig, err := tlsconfig.Build(
+				tlsconfig.WithInternalServiceDefaults(),
+				tlsconfig.WithIdentityFromFile(certPath, keyPath),
+			).Server(
+				tlsconfig.WithClientAuthenticationFromFile(caCertPath),
+			)
+			Expect(err).NotTo(HaveOccurred())
+			server.HTTPTestServer.TLS = tlsConfig
+			server.HTTPTestServer.StartTLS()
+
 			stagingGUID := "staging-guid"
 			completionCallback := "completion-call-me-back"
+			eiriniCACertPath := filepath.Join(certsPath, CACertName)
+			eiriniClientCert := filepath.Join(certsPath, EiriniClientCert)
+			clientKey := filepath.Join(certsPath, EiriniClientKey)
 			eiriniAddr := server.URL()
 
-			responder = NewResponder(stagingGUID, completionCallback, eiriniAddr)
+			responder, _ = NewResponder(stagingGUID, completionCallback, eiriniAddr, eiriniCACertPath, eiriniClientCert, clientKey)
 		})
 
 		AfterEach(func() {
 			server.Close()
+		})
+
+		Context("when provided tls certs are missing", func() {
+
+			It("should return an error", func() {
+				_, initErr := NewResponder("guid", "callback", "0.0.0.0:1", "does-not-exist", "does-not-exist", "does-not-exist")
+				Expect(initErr).To(MatchError(ContainSubstring("failed to create http client")))
+			})
+		})
+
+		Context("when the provided certificates are not valid for the server", func() {
+			BeforeEach(func() {
+				server.RouteToHandler("PUT", "/stage/staging-guid/completed",
+					ghttp.VerifyJSON(`{
+						"task_guid": "staging-guid",
+						"failed": false,
+						"failure_reason": "",
+						"result": "",
+						"created_at": 0
+					}`),
+				)
+			})
+
+			It("should return an error", func() {
+				resp := models.TaskCallbackResponse{
+					TaskGuid: "staging-guid",
+				}
+
+				stagingGUID := "staging-guid"
+				completionCallback := "completion-call-me-back"
+
+				certsPath, err := filepath.Abs("integration/testdata/certs")
+				Expect(err).ToNot(HaveOccurred())
+				eiriniCACertPath := filepath.Join(certsPath, "internal-ca-cert")
+				eiriniClientCert := filepath.Join(certsPath, "not-exactly-valid.crt")
+				clientKey := filepath.Join(certsPath, "not-exactly-valid.key")
+				eiriniAddr := server.URL()
+
+				responder, _ = NewResponder(stagingGUID, completionCallback, eiriniAddr, eiriniCACertPath, eiriniClientCert, clientKey)
+				err = responder.RespondWithSuccess(&resp)
+				Expect(err).To(MatchError(ContainSubstring("request failed")))
+			})
+
 		})
 
 		Context("when there is an error", func() {
@@ -53,8 +114,7 @@ var _ = Describe("Responder", func() {
 			})
 
 			It("should respond with failure", func() {
-				err = errors.New("sploded")
-				responder.RespondWithFailure(err)
+				responder.RespondWithFailure(errors.New("sploded"))
 			})
 		})
 
@@ -69,7 +129,7 @@ var _ = Describe("Responder", func() {
 			Context("when preparing the response results", func() {
 				Context("when the results file is missing", func() {
 					It("should error with missing file msg", func() {
-						_, err = responder.PrepareSuccessResponse(resultsFilePath, string(buildpacks))
+						_, err := responder.PrepareSuccessResponse(resultsFilePath, string(buildpacks))
 						Expect(err).To(HaveOccurred())
 						Expect(err.Error()).To(ContainSubstring("failed to read result.json"))
 					})
@@ -79,7 +139,7 @@ var _ = Describe("Responder", func() {
 					It("should error when unmarhsaling the content", func() {
 						resultsFilePath = resultsFile(resultContents)
 						buildpack := cc_messages.Buildpack{}
-						buildpacks, err = json.Marshal([]cc_messages.Buildpack{buildpack})
+						buildpacks, err := json.Marshal([]cc_messages.Buildpack{buildpack})
 						Expect(err).NotTo(HaveOccurred())
 
 						_, err = responder.PrepareSuccessResponse(resultsFilePath, string(buildpacks))
@@ -103,14 +163,9 @@ var _ = Describe("Responder", func() {
 						"created_at": 0
 					}`),
 					)
-				})
 
-				JustBeforeEach(func() {
 					resultsFilePath = resultsFile(resultContents)
 
-					buildpack := cc_messages.Buildpack{}
-					buildpacks, err = json.Marshal([]cc_messages.Buildpack{buildpack})
-					Expect(err).NotTo(HaveOccurred())
 				})
 
 				AfterEach(func() {
@@ -118,8 +173,11 @@ var _ = Describe("Responder", func() {
 				})
 
 				It("should respond with failure", func() {
-					var resp *models.TaskCallbackResponse
-					resp, err = responder.PrepareSuccessResponse(resultsFilePath, string(buildpacks))
+					buildpack := cc_messages.Buildpack{}
+					buildpacks, err := json.Marshal([]cc_messages.Buildpack{buildpack})
+					Expect(err).NotTo(HaveOccurred())
+
+					resp, err := responder.PrepareSuccessResponse(resultsFilePath, string(buildpacks))
 					Expect(err).NotTo(HaveOccurred())
 					err = responder.RespondWithSuccess(resp)
 					Expect(err).NotTo(HaveOccurred())
