@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"path/filepath"
 
@@ -27,7 +28,8 @@ func NewResponder(stagingGUID, completionCallback, eiriniAddr, caCert, clientCrt
 		{Crt: clientCrt, Key: clientKey, Ca: caCert},
 	})
 	if err != nil {
-		return Responder{}, errors.Wrap(err, "failed to create http client")
+		log.Println("mTLS is not configured, falling back to non-secure client")
+		client = &http.Client{}
 	}
 
 	return Responder{

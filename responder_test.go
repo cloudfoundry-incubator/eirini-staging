@@ -1,9 +1,11 @@
 package eirinistaging_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -57,10 +59,19 @@ var _ = Describe("Responder", func() {
 		})
 
 		Context("when provided tls certs are missing", func() {
+			var buf bytes.Buffer
+			BeforeEach(func() {
+				log.SetOutput(&buf)
+			})
 
-			It("should return an error", func() {
+			AfterEach(func() {
+				log.SetOutput(os.Stderr)
+			})
+
+			It("should create a responder with the default client", func() {
 				_, initErr := NewResponder("guid", "callback", "0.0.0.0:1", "does-not-exist", "does-not-exist", "does-not-exist")
-				Expect(initErr).To(MatchError(ContainSubstring("failed to create http client")))
+				Expect(initErr).NotTo(HaveOccurred())
+				Expect(buf.String()).To(ContainSubstring("falling back to non-secure client"))
 			})
 		})
 
