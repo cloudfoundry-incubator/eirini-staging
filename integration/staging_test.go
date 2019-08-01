@@ -20,6 +20,7 @@ import (
 
 	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/tlsconfig"
+	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 
 	. "github.com/onsi/ginkgo"
@@ -168,6 +169,12 @@ var _ = Describe("StagingText", func() {
 
 				It("runs successfully", func() {
 					Expect(session.ExitCode()).To(BeZero())
+				})
+
+				Context("prints the staging log", func() {
+					FIt("should print the installation log", func() {
+						Expect(session.Err).To(gbytes.Say("Installing dependencies"))
+					})
 				})
 			})
 

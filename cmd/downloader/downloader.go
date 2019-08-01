@@ -46,6 +46,7 @@ func main() {
 	buildpackManager := eirinistaging.NewBuildpackManager(downloadClient, http.DefaultClient, buildpacksDir, buildpacksJSON)
 	packageInstaller := eirinistaging.NewPackageManager(downloadClient, appBitsDownloadURL, workspaceDir)
 
+	log.Println("Installing dependencies")
 	for _, installer := range []eirinistaging.Installer{
 		buildpackManager,
 		packageInstaller,
