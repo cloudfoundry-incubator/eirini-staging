@@ -86,7 +86,7 @@ var _ = Describe("PackageInstaller", func() {
 
 			It("should error with an corresponding error message", func() {
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(ContainSubstring("failed to perform request")))
+				Expect(err).To(MatchError(ContainSubstring("failed to perform get request")))
 			})
 		})
 
@@ -113,7 +113,7 @@ var _ = Describe("PackageInstaller", func() {
 			})
 
 			It("should return the right error message", func() {
-				Expect(err).To(MatchError(ContainSubstring("failed to perform request")))
+				Expect(err).To(MatchError(ContainSubstring("failed to perform get request")))
 				Expect(err).To(MatchError(ContainSubstring(downloadURL)))
 			})
 		})
