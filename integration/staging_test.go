@@ -172,7 +172,7 @@ var _ = Describe("StagingText", func() {
 				})
 
 				Context("prints the staging log", func() {
-					FIt("should print the installation log", func() {
+					It("should print the installation log", func() {
 						Expect(session.Err).To(gbytes.Say("Installing dependencies"))
 					})
 				})
