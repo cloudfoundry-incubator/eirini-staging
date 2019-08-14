@@ -99,12 +99,7 @@ func execute(conf *builder.Config) error {
 	runner := builder.NewRunner(conf)
 	defer runner.CleanUp()
 
-	err := runner.Run()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return runner.Run()
 }
 
 func extract(downloadDir string) (string, error) {

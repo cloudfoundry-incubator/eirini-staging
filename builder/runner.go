@@ -466,7 +466,7 @@ func (runner *Runner) saveInfo(buildpacks []BuildpackMetadata, releaseInfo Relea
 	}
 	defer resultFile.Close()
 
-	err = json.NewEncoder(resultFile).Encode(NewStagingResult(
+	return json.NewEncoder(resultFile).Encode(NewStagingResult(
 		releaseInfo.DefaultProcessTypes,
 		LifecycleMetadata{
 			BuildpackKey:      lastBuildpack.Key,
@@ -474,11 +474,6 @@ func (runner *Runner) saveInfo(buildpacks []BuildpackMetadata, releaseInfo Relea
 			Buildpacks:        buildpacks,
 		},
 	))
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (runner *Runner) run(cmd *exec.Cmd, output io.Writer) error {
