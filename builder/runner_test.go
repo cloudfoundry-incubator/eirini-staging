@@ -17,7 +17,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 )
 
@@ -121,103 +120,120 @@ var _ = Describe("Building", func() {
 	}
 
 	Context("run detect", func() {
-		BeforeEach(func() {
-			buildpackOrder = "always-detects,also-always-detects"
-
-			cpBuildpack("always-detects")
-			cpBuildpack("also-always-detects")
-			cp(path.Join(appFixtures, "bash-app", "app.sh"), buildDir)
-		})
-
-		Context("first buildpack detect is not executable", func() {
-
+		Context("with multiple buildpacks", func() {
 			BeforeEach(func() {
-				hash := fmt.Sprintf("%x", md5.Sum([]byte("always-detects")))
-				binDetect := filepath.Join(buildpacksDir, hash, "bin", "detect")
-				Expect(os.Chmod(binDetect, 0644)).To(Succeed())
+				buildpackOrder = "always-detects,also-always-detects"
+
+				cpBuildpack("always-detects")
+				cpBuildpack("also-always-detects")
+				cp(path.Join(appFixtures, "bash-app", "app.sh"), buildDir)
 			})
 
-			JustBeforeEach(func() {
-				go func() {
-					log.SetOutput(pw)
-					_ = runner.Run()
-					pw.Close()
-				}()
-			})
+			Context("first buildpack detect is not executable", func() {
 
-			It("should warn that detect is not executable", func() {
-				Eventually(gbytes.BufferReader(pr)).Should(gbytes.Say("WARNING: buildpack script '/bin/detect' is not executable"))
-			})
-
-			It("should have chosen the second buildpack detect", func() {
-				_, err := ioutil.ReadAll(pr)
-				Expect(err).NotTo(HaveOccurred())
-
-				data := &struct {
-					LifeCycle struct {
-						Key string `json:"buildpack_key"`
-					} `json:"lifecycle_metadata"`
-				}{}
-				Eventually(func() error { return json.Unmarshal(resultJSON(), data) }).Should(Succeed())
-
-				Expect(data.LifeCycle.Key).To(Equal("also-always-detects"))
-			})
-
-		})
-
-		Describe("the contents of the output tgz", func() {
-			var files []string
-
-			JustBeforeEach(func() {
-				err := runner.Run()
-				Expect(err).NotTo(HaveOccurred())
-
-				result, err := exec.Command("tar", "-tzf", outputDroplet).Output()
-				Expect(err).NotTo(HaveOccurred())
-				files = removeTrailingSpace(strings.Split(string(result), "\n"))
-			})
-
-			It("should contain an /app dir with the contents of the compilation", func() {
-				Expect(files).To(ContainElement("./app/"))
-				Expect(files).To(ContainElement("./app/app.sh"))
-				Expect(files).To(ContainElement("./app/compiled"))
-			})
-
-			It("should contain an empty /tmp directory", func() {
-				Expect(files).To(ContainElement("./tmp/"))
-				Expect(files).NotTo(ContainElement(MatchRegexp("\\./tmp/.+")))
-			})
-
-			It("should contain an empty /logs directory", func() {
-				Expect(files).To(ContainElement("./logs/"))
-				Expect(files).NotTo(ContainElement(MatchRegexp("\\./logs/.+")))
-			})
-
-			Context("buildpack with supply/finalize", func() {
 				BeforeEach(func() {
-					buildpackOrder = "has-finalize,always-detects,also-always-detects"
-					cpBuildpack("has-finalize")
+					hash := fmt.Sprintf("%x", md5.Sum([]byte("always-detects")))
+					binDetect := filepath.Join(buildpacksDir, hash, "bin", "detect")
+					Expect(os.Chmod(binDetect, 0644)).To(Succeed())
 				})
 
-				It("runs supply/finalize and not compile", func() {
-					Expect(files).To(ContainElement("./app/finalized"))
-					Expect(files).ToNot(ContainElement("./app/compiled"))
+				JustBeforeEach(func() {
+					go func() {
+						log.SetOutput(pw)
+						_ = runner.Run()
+						pw.Close()
+					}()
 				})
 
-				It("places profile.d scripts in ./profile.d (not app)", func() {
-					Expect(files).To(ContainElement("./profile.d/finalized.sh"))
+				It("should warn that detect is not executable", func() {
+					out, err := ioutil.ReadAll(pr)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(out).To(ContainSubstring("WARNING: buildpack script '/bin/detect' is not executable"))
+				})
+
+				Context("first buildpack is missing the detect script", func() {
+					BeforeEach(func() {
+						hash := fmt.Sprintf("%x", md5.Sum([]byte("always-detects")))
+						binDetect := filepath.Join(buildpacksDir, hash, "bin", "detect")
+						Expect(exec.Command("rm", binDetect).Run()).To(Succeed())
+					})
+
+					It("should log the missing detect script", func() {
+						out, err := ioutil.ReadAll(pr)
+						Expect(err).NotTo(HaveOccurred())
+						Expect(out).To(ContainSubstring("failed to find detect script"))
+					})
+				})
+
+				It("should have chosen the second buildpack detect", func() {
+					_, err := ioutil.ReadAll(pr)
+					Expect(err).NotTo(HaveOccurred())
+
+					data := &struct {
+						LifeCycle struct {
+							Key string `json:"buildpack_key"`
+						} `json:"lifecycle_metadata"`
+					}{}
+					Eventually(func() error { return json.Unmarshal(resultJSON(), data) }).Should(Succeed())
+
+					Expect(data.LifeCycle.Key).To(Equal("also-always-detects"))
+				})
+
+			})
+
+			Describe("the contents of the output tgz", func() {
+				var files []string
+
+				JustBeforeEach(func() {
+					err := runner.Run()
+					Expect(err).NotTo(HaveOccurred())
+
+					result, err := exec.Command("tar", "-tzf", outputDroplet).Output()
+					Expect(err).NotTo(HaveOccurred())
+					files = removeTrailingSpace(strings.Split(string(result), "\n"))
+				})
+
+				It("should contain an /app dir with the contents of the compilation", func() {
+					Expect(files).To(ContainElement("./app/"))
+					Expect(files).To(ContainElement("./app/app.sh"))
+					Expect(files).To(ContainElement("./app/compiled"))
+				})
+
+				It("should contain an empty /tmp directory", func() {
+					Expect(files).To(ContainElement("./tmp/"))
+					Expect(files).NotTo(ContainElement(MatchRegexp("\\./tmp/.+")))
+				})
+
+				It("should contain an empty /logs directory", func() {
+					Expect(files).To(ContainElement("./logs/"))
+					Expect(files).NotTo(ContainElement(MatchRegexp("\\./logs/.+")))
+				})
+
+				Context("buildpack with supply/finalize", func() {
+					BeforeEach(func() {
+						buildpackOrder = "has-finalize,always-detects,also-always-detects"
+						cpBuildpack("has-finalize")
+					})
+
+					It("runs supply/finalize and not compile", func() {
+						Expect(files).To(ContainElement("./app/finalized"))
+						Expect(files).ToNot(ContainElement("./app/compiled"))
+					})
+
+					It("places profile.d scripts in ./profile.d (not app)", func() {
+						Expect(files).To(ContainElement("./profile.d/finalized.sh"))
+					})
 				})
 			})
-		})
 
-		Describe("the result.json, which is used to communicate back to the stager", func() {
-			JustBeforeEach(func() {
-				err := runner.Run()
-				Expect(err).NotTo(HaveOccurred())
-			})
+			Describe("the result.json, which is used to communicate back to the stager", func() {
+				JustBeforeEach(func() {
+					err := runner.Run()
+					Expect(err).NotTo(HaveOccurred())
+				})
 
-			It("exists, and contains the detected buildpack", func() {
-				Expect(resultJSON()).To(MatchJSON(`{
+				It("exists, and contains the detected buildpack", func() {
+					Expect(resultJSON()).To(MatchJSON(`{
 						"process_types":{"web":"the start command"},
 						"lifecycle_type": "buildpack",
 						"lifecycle_metadata":{
@@ -229,15 +245,15 @@ var _ = Describe("Building", func() {
 						},
 						"execution_metadata": ""
 				}`))
-			})
-
-			Context("when the app has a Procfile", func() {
-				BeforeEach(func() {
-					cp(filepath.Join(appFixtures, "with-procfile-with-web", "Procfile"), buildDir)
 				})
 
-				It("uses the Procfile processes in the execution metadata", func() {
-					Expect(resultJSON()).To(MatchJSON(`{
+				Context("when the app has a Procfile", func() {
+					BeforeEach(func() {
+						cp(filepath.Join(appFixtures, "with-procfile-with-web", "Procfile"), buildDir)
+					})
+
+					It("uses the Procfile processes in the execution metadata", func() {
+						Expect(resultJSON()).To(MatchJSON(`{
 							"process_types":{"web":"procfile-provided start-command"},
 							"lifecycle_type": "buildpack",
 							"lifecycle_metadata":{
@@ -249,16 +265,16 @@ var _ = Describe("Building", func() {
 							},
 							"execution_metadata": ""
 					 }`))
-				})
-			})
-
-			Context("when the app does not have a Procfile", func() {
-				BeforeEach(func() {
-					cp(filepath.Join(appFixtures, "bash-app", "app.sh"), buildDir)
+					})
 				})
 
-				It("uses the default_process_types specified by the buildpack", func() {
-					Expect(resultJSON()).To(MatchJSON(`{
+				Context("when the app does not have a Procfile", func() {
+					BeforeEach(func() {
+						cp(filepath.Join(appFixtures, "bash-app", "app.sh"), buildDir)
+					})
+
+					It("uses the default_process_types specified by the buildpack", func() {
+						Expect(resultJSON()).To(MatchJSON(`{
 							"process_types":{"web":"the start command"},
 							"lifecycle_type": "buildpack",
 							"lifecycle_metadata":{
@@ -270,6 +286,7 @@ var _ = Describe("Building", func() {
 							},
 							"execution_metadata": ""
 					 }`))
+					})
 				})
 			})
 		})
@@ -451,79 +468,108 @@ var _ = Describe("Building", func() {
 			err error
 			out []byte
 		)
+
 		BeforeEach(func() {
 			buildpackOrder = "release-without-command"
 			cpBuildpack("release-without-command")
 		})
 
-		JustBeforeEach(func() {
-			go func() {
-				log.SetOutput(pw)
-				defer GinkgoRecover()
-				err = runner.Run()
-				Expect(err).NotTo(HaveOccurred())
-				pw.Close()
-			}()
+		Context("when release script is missing", func() {
+			BeforeEach(func() {
+				hash := fmt.Sprintf("%x", md5.Sum([]byte("release-without-command")))
+				binDetect := filepath.Join(buildpacksDir, hash, "bin", "release")
+				Expect(os.Chmod(binDetect, 0644)).To(Succeed())
+			})
 
-			out, err = ioutil.ReadAll(pr)
-			Expect(err).NotTo(HaveOccurred())
+			It("should log the error", func() {
+				Expect(runner.Run()).NotTo(Succeed())
+			})
+
+			It("should log the error", func() {
+				go func() {
+					log.SetOutput(pw)
+					defer GinkgoRecover()
+					_ = runner.Run()
+					pw.Close()
+				}()
+
+				out, err = ioutil.ReadAll(pr)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(out).To(ContainSubstring("no release script"))
+			})
+
 		})
 
-		Context("when the app has a Procfile", func() {
-			Context("with web defined", func() {
-				BeforeEach(func() {
-					cp(filepath.Join(appFixtures, "with-procfile-with-web", "Procfile"), buildDir)
+		Context("when there is a release script", func() {
+			JustBeforeEach(func() {
+				go func() {
+					log.SetOutput(pw)
+					defer GinkgoRecover()
+					err = runner.Run()
+					Expect(err).NotTo(HaveOccurred())
+					pw.Close()
+				}()
+
+				out, err = ioutil.ReadAll(pr)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			Context("when the app has a Procfile", func() {
+				Context("with web defined", func() {
+					BeforeEach(func() {
+						cp(filepath.Join(appFixtures, "with-procfile-with-web", "Procfile"), buildDir)
+					})
+
+					It("uses the Procfile for execution_metadata", func() {
+						Expect(resultJSON()).To(MatchJSON(`{
+								"process_types":{"web":"procfile-provided start-command"},
+								"lifecycle_type": "buildpack",
+								"lifecycle_metadata":{
+									"detected_buildpack": "Release Without Command",
+									"buildpack_key": "release-without-command",
+									"buildpacks": [
+										{ "key": "release-without-command", "name": "Release Without Command" }
+									]
+								},
+								"execution_metadata": ""
+							}`))
+					})
 				})
 
-				It("uses the Procfile for execution_metadata", func() {
-					Expect(resultJSON()).To(MatchJSON(`{
-							"process_types":{"web":"procfile-provided start-command"},
-							"lifecycle_type": "buildpack",
-							"lifecycle_metadata":{
-								"detected_buildpack": "Release Without Command",
-								"buildpack_key": "release-without-command",
-								"buildpacks": [
-								  { "key": "release-without-command", "name": "Release Without Command" }
-							  ]
-							},
-							"execution_metadata": ""
-						}`))
+				Context("without web", func() {
+					BeforeEach(func() {
+						cp(filepath.Join(appFixtures, "with-procfile", "Procfile"), buildDir)
+					})
+
+					It("displays an error and returns the Procfile data without web", func() {
+						Expect(string(out)).To(ContainSubstring("No start command specified by buildpack or via Procfile."))
+						Expect(string(out)).To(ContainSubstring("App will not start unless a command is provided at runtime."))
+
+						Expect(resultJSON()).To(MatchJSON(`{
+								"process_types":{"spider":"bogus command"},
+								"lifecycle_type": "buildpack",
+								"lifecycle_metadata": {
+									"detected_buildpack": "Release Without Command",
+									"buildpack_key": "release-without-command",
+									"buildpacks": [
+										{ "key": "release-without-command", "name": "Release Without Command" }
+									]
+								},
+								"execution_metadata": ""
+							}`))
+					})
 				})
 			})
 
-			Context("without web", func() {
+			Context("and the app has no Procfile", func() {
 				BeforeEach(func() {
-					cp(filepath.Join(appFixtures, "with-procfile", "Procfile"), buildDir)
+					cp(filepath.Join(appFixtures, "bash-app", "app.sh"), buildDir)
 				})
 
-				It("displays an error and returns the Procfile data without web", func() {
+				It("fails", func() {
 					Expect(string(out)).To(ContainSubstring("No start command specified by buildpack or via Procfile."))
 					Expect(string(out)).To(ContainSubstring("App will not start unless a command is provided at runtime."))
-
-					Expect(resultJSON()).To(MatchJSON(`{
-							"process_types":{"spider":"bogus command"},
-							"lifecycle_type": "buildpack",
-							"lifecycle_metadata": {
-								"detected_buildpack": "Release Without Command",
-								"buildpack_key": "release-without-command",
-								"buildpacks": [
-								  { "key": "release-without-command", "name": "Release Without Command" }
-							  ]
-							},
-							"execution_metadata": ""
-						}`))
 				})
-			})
-		})
-
-		Context("and the app has no Procfile", func() {
-			BeforeEach(func() {
-				cp(filepath.Join(appFixtures, "bash-app", "app.sh"), buildDir)
-			})
-
-			It("fails", func() {
-				Expect(string(out)).To(ContainSubstring("No start command specified by buildpack or via Procfile."))
-				Expect(string(out)).To(ContainSubstring("App will not start unless a command is provided at runtime."))
 			})
 		})
 	})
@@ -733,6 +779,19 @@ var _ = Describe("Building", func() {
 			Expect(err.Error()).To(ContainSubstring("None of the buildpacks detected a compatible application"))
 			Expect(err.(builder.DescriptiveError).ExitCode).To(Equal(222))
 		})
+
+		It("should log the error", func() {
+			go func() {
+				log.SetOutput(pw)
+				defer GinkgoRecover()
+				_ = runner.Run()
+				pw.Close()
+			}()
+
+			out, err := ioutil.ReadAll(pr)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(out).To(ContainSubstring("None of the buildpacks detected a compatible application"))
+		})
 	})
 
 	Context("when the buildpack fails in compile", func() {
@@ -748,6 +807,19 @@ var _ = Describe("Building", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("Failed to compile droplet"))
 			Expect(err.(builder.DescriptiveError).ExitCode).To(Equal(223))
+		})
+
+		It("should log the error", func() {
+			go func() {
+				log.SetOutput(pw)
+				defer GinkgoRecover()
+				_ = runner.Run()
+				pw.Close()
+			}()
+
+			out, err := ioutil.ReadAll(pr)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(out).To(ContainSubstring("compile script failed"))
 		})
 	})
 
@@ -767,6 +839,19 @@ var _ = Describe("Building", func() {
 			Expect(err.Error()).To(ContainSubstring("Failed to run all supply scripts"))
 			Expect(err.(builder.DescriptiveError).ExitCode).To(Equal(225))
 		})
+
+		It("should log the error", func() {
+			go func() {
+				log.SetOutput(pw)
+				defer GinkgoRecover()
+				_ = runner.Run()
+				pw.Close()
+			}()
+
+			out, err := ioutil.ReadAll(pr)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(out).To(ContainSubstring("supply script failed"))
+		})
 	})
 
 	Context("when a buildpack that isn't last doesn't have a supply script", func() {
@@ -784,6 +869,19 @@ var _ = Describe("Building", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("Error: one of the buildpacks chosen to supply dependencies does not support multi-buildpack apps"))
 			Expect(err.(builder.DescriptiveError).ExitCode).To(Equal(225))
+		})
+
+		It("should log the error", func() {
+			go func() {
+				log.SetOutput(pw)
+				defer GinkgoRecover()
+				_ = runner.Run()
+				pw.Close()
+			}()
+
+			out, err := ioutil.ReadAll(pr)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(out).To(ContainSubstring("supply script missing"))
 		})
 	})
 

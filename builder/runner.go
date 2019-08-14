@@ -73,11 +73,13 @@ func (runner *Runner) Run() error {
 
 	err = runner.createArtifacts(tarPath, buildpackMetadata, releaseInfo)
 	if err != nil {
+		logError("failed to find runnable app artifact")
 		return err
 	}
 
 	err = runner.createCache(tarPath)
 	if err != nil {
+		logError("failed to cache runnable app artifact")
 		return err
 	}
 
@@ -282,6 +284,7 @@ func (runner *Runner) runSupplyBuildpacks() (string, []BuildpackMetadata, error)
 
 		err = runner.run(exec.Command(filepath.Join(buildpackPath, "bin", "supply"), runner.config.BuildDir, runner.supplyCachePath(buildpack), runner.depsDir, runner.config.DepsIndex(i)), os.Stdout)
 		if err != nil {
+			logError(fmt.Sprintf("supply script failed %s", err.Error()))
 			return "", nil, NewDescriptiveError(err, SupplyFailMsg)
 		}
 	}
@@ -289,6 +292,7 @@ func (runner *Runner) runSupplyBuildpacks() (string, []BuildpackMetadata, error)
 	finalBuildpack := runner.config.BuildpackOrder[len(runner.config.SupplyBuildpacks())]
 	finalPath, err := runner.buildpackPath(finalBuildpack)
 	if err != nil {
+		logError(err.Error())
 		return "", nil, NewDescriptiveError(err, SupplyFailMsg)
 	}
 
@@ -305,8 +309,10 @@ func (runner *Runner) validateSupplyBuildpacks() error {
 		}
 
 		if hasSupply, err := hasSupply(buildpackPath); err != nil {
+			logError(fmt.Sprintf("failed to check if supply script exists %s", err.Error()))
 			return NewDescriptiveError(err, SupplyFailMsg)
 		} else if !hasSupply {
+			logError("supply script missing")
 			return NewDescriptiveError(err, NoSupplyScriptFailMsg)
 		}
 	}
@@ -348,7 +354,7 @@ func (runner *Runner) runFinalize(buildpackPath string) error {
 		}
 
 		if err := runner.run(exec.Command(filepath.Join(buildpackPath, "bin", "compile"), runner.config.BuildDir, cacheDir), os.Stdout); err != nil {
-			println(err.Error())
+			logError(fmt.Sprintf("compile script failed %s", err.Error()))
 			return NewDescriptiveError(fmt.Errorf("%s %s", "Failed to compile droplet", err.Error()), CompileFailMsg)
 		}
 	}
@@ -383,6 +389,7 @@ func (runner *Runner) detect() (string, []BuildpackMetadata, error) {
 	}
 
 	err := NewDescriptiveError(errors.New(FullDetectFailMsg), DetectFailMsg)
+	logError(err.Error())
 	return "", nil, err
 }
 
@@ -417,6 +424,7 @@ func (runner *Runner) release(buildpackDir string) (Release, error) {
 	output := new(bytes.Buffer)
 	err = runner.run(exec.Command(filepath.Join(buildpackDir, "bin", "release"), runner.config.BuildDir), output)
 	if err != nil {
+		logError("no release script")
 		return Release{}, err
 	}
 
@@ -486,7 +494,7 @@ func (runner *Runner) copyApp(buildDir, stageDir string) error {
 func (runner *Runner) warnIfDetectNotExecutable(buildpackPath string) error {
 	fileInfo, err := os.Stat(filepath.Join(buildpackPath, "bin", "detect"))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to find detect script: %s", err)
 	}
 
 	if fileInfo.Mode()&0111 != 0111 {
