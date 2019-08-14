@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -14,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pkg/errors"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -407,7 +407,7 @@ func (runner *Runner) readProcfile() (map[string]string, error) {
 	err = yaml.Unmarshal(procFile, &processes)
 	if err != nil {
 		// clobber yaml parsing  error
-		return processes, errors.New("invalid YAML")
+		return processes, errors.Wrap(err, "invalid YAML")
 	}
 
 	return processes, nil
@@ -422,8 +422,7 @@ func (runner *Runner) release(buildpackDir string) (Release, error) {
 	output := new(bytes.Buffer)
 	err = runner.run(exec.Command(filepath.Join(buildpackDir, "bin", "release"), runner.config.BuildDir), output)
 	if err != nil {
-		logError("no release script")
-		return Release{}, err
+		return Release{}, errors.Wrap(err, "no release script")
 	}
 
 	parsedRelease := Release{}
@@ -492,7 +491,7 @@ func (runner *Runner) copyApp(buildDir, stageDir string) error {
 func (runner *Runner) warnIfDetectNotExecutable(buildpackPath string) error {
 	fileInfo, err := os.Stat(filepath.Join(buildpackPath, "bin", "detect"))
 	if err != nil {
-		return fmt.Errorf("failed to find detect script: %s", err)
+		return errors.Wrap(err, "failed to find detect script")
 	}
 
 	if fileInfo.Mode()&0111 != 0111 {

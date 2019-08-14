@@ -765,19 +765,6 @@ var _ = Describe("Building", func() {
 			Expect(err.Error()).To(ContainSubstring("None of the buildpacks detected a compatible application"))
 			Expect(err.(builder.DescriptiveError).ExitCode).To(Equal(222))
 		})
-
-		It("should log the error", func() {
-			go func() {
-				log.SetOutput(pw)
-				defer GinkgoRecover()
-				_ = runner.Run()
-				pw.Close()
-			}()
-
-			out, err := ioutil.ReadAll(pr)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(out).To(ContainSubstring("None of the buildpacks detected a compatible application"))
-		})
 	})
 
 	Context("when the buildpack fails in compile", func() {
