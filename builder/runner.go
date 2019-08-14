@@ -42,11 +42,13 @@ func (runner *Runner) Run() error {
 	}
 
 	//detect, compile, release
+	log.Println("Cleaning cache dir")
 	err = runner.cleanCacheDir()
 	if err != nil {
 		return err
 	}
 
+	log.Println("Detecting buidlpack")
 	detectedBuildpackDir, buildpackMetadata, err := runner.supplyOrDetect()
 	if err != nil {
 		return err
@@ -61,6 +63,7 @@ func (runner *Runner) Run() error {
 		buildpackMetadata = runner.buildpacksMetadata(runner.config.BuildpackOrder)
 	}
 
+	log.Println("Building droplet release")
 	releaseInfo, err := runner.release(detectedBuildpackDir)
 	if err != nil {
 		return NewDescriptiveError(fmt.Errorf("%s %s", "Failed to build droplet release", err.Error()), ReleaseFailMsg)
@@ -71,6 +74,7 @@ func (runner *Runner) Run() error {
 		return err
 	}
 
+	log.Println("Creating app artifact")
 	err = runner.createArtifacts(tarPath, buildpackMetadata, releaseInfo)
 	if err != nil {
 		logError("failed to find runnable app artifact")
