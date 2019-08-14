@@ -74,12 +74,12 @@ func (e DescriptiveError) Error() string {
 	return fmt.Sprintf("%s: exit status %d - internal error: %s", e.Message, e.ExitCode, e.InnerError.Error())
 }
 
+var DetectFailErr = DescriptiveError{ExitCode: DetectFailCode, Message: FullDetectFailMsg}
+
 func NewDescriptiveError(err error, msg string, args ...interface{}) error {
 	var exitCode int
 
 	switch msg {
-	case DetectFailMsg:
-		exitCode = DetectFailCode
 	case CompileFailMsg:
 		exitCode = CompileFailCode
 	case ReleaseFailMsg:

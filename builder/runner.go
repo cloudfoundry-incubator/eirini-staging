@@ -388,9 +388,7 @@ func (runner *Runner) detect() (string, []BuildpackMetadata, error) {
 		}
 	}
 
-	err := NewDescriptiveError(errors.New(FullDetectFailMsg), DetectFailMsg)
-	logError(err.Error())
-	return "", nil, err
+	return "", nil, DetectFailErr
 }
 
 func (runner *Runner) readProcfile() (map[string]string, error) {

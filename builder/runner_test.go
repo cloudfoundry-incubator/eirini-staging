@@ -482,22 +482,8 @@ var _ = Describe("Building", func() {
 			})
 
 			It("should log the error", func() {
-				Expect(runner.Run()).NotTo(Succeed())
+				Expect(runner.Run()).To(MatchError(ContainSubstring("no release script")))
 			})
-
-			It("should log the error", func() {
-				go func() {
-					log.SetOutput(pw)
-					defer GinkgoRecover()
-					_ = runner.Run()
-					pw.Close()
-				}()
-
-				out, err = ioutil.ReadAll(pr)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(out).To(ContainSubstring("no release script"))
-			})
-
 		})
 
 		Context("when there is a release script", func() {
