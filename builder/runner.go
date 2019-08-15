@@ -45,16 +45,18 @@ func (runner *Runner) Run() error {
 	log.Println("Cleaning cache dir")
 	err = runner.cleanCacheDir()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "unable to clean cache dir")
 	}
 
 	log.Println("Detecting buidlpack")
 	detectedBuildpackDir, buildpackMetadata, err := runner.supplyOrDetect()
 	if err != nil {
+		// detect buildpack returns custom error
 		return err
 	}
 
 	if err = runner.runFinalize(detectedBuildpackDir); err != nil {
+		// runFinalize returns custom error
 		return err
 	}
 
@@ -78,13 +80,13 @@ func (runner *Runner) Run() error {
 	err = runner.createArtifacts(tarPath, buildpackMetadata, releaseInfo)
 	if err != nil {
 		logError("failed to find runnable app artifact")
-		return err
+		return errors.Wrap(err, "failed to find runnable app artifact")
 	}
 
 	err = runner.createCache(tarPath)
 	if err != nil {
 		logError("failed to cache runnable app artifact")
-		return err
+		return errors.Wrap(err, "failed to cache runnable app artifact")
 	}
 
 	return nil
@@ -251,7 +253,7 @@ func (runner *Runner) buildpackPath(buildpack string) (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("malformed buildpack does not contain a /bin dir: %s", buildpack)
+	return "", errors.Errorf("malformed buildpack does not contain a /bin dir: %s", buildpack)
 }
 
 func (runner *Runner) pathHasBinDirectory(pathToTest string) bool {
