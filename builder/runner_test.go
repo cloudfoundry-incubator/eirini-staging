@@ -745,9 +745,7 @@ var _ = Describe("Building", func() {
 		})
 
 		It("fails", func() {
-			err := runner.Run()
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("Failed to read command from Procfile: exit status 1 - internal error: invalid YAML"))
+			Expect(runner.Run()).To(MatchError(ContainSubstring("Failed to read command from Procfile: exit status 1 - internal error: invalid YAML")))
 		})
 	})
 
@@ -761,8 +759,7 @@ var _ = Describe("Building", func() {
 
 		It("should exit with an error", func() {
 			err := runner.Run()
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("None of the buildpacks detected a compatible application"))
+			Expect(err).To(MatchError(ContainSubstring("None of the buildpacks detected a compatible application")))
 			Expect(err.(builder.DescriptiveError).ExitCode).To(Equal(222))
 		})
 	})
@@ -777,8 +774,7 @@ var _ = Describe("Building", func() {
 
 		It("should exit with an error", func() {
 			err := runner.Run()
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("Failed to compile droplet"))
+			Expect(err).To(MatchError(ContainSubstring("Failed to compile droplet")))
 			Expect(err.(builder.DescriptiveError).ExitCode).To(Equal(223))
 		})
 
@@ -808,8 +804,7 @@ var _ = Describe("Building", func() {
 
 		It("should exit with an error", func() {
 			err := runner.Run()
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("Failed to run all supply scripts"))
+			Expect(err).To(MatchError(ContainSubstring("Failed to run all supply scripts")))
 			Expect(err.(builder.DescriptiveError).ExitCode).To(Equal(225))
 		})
 
@@ -839,8 +834,7 @@ var _ = Describe("Building", func() {
 
 		It("should exit with a clear error", func() {
 			err := runner.Run()
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("Error: one of the buildpacks chosen to supply dependencies does not support multi-buildpack apps"))
+			Expect(err).To(MatchError(ContainSubstring("Error: one of the buildpacks chosen to supply dependencies does not support multi-buildpack apps")))
 			Expect(err.(builder.DescriptiveError).ExitCode).To(Equal(225))
 		})
 
@@ -913,8 +907,7 @@ var _ = Describe("Building", func() {
 
 		It("should exit with an error", func() {
 			err := runner.Run()
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("buildpack's release output invalid"))
+			Expect(err).To(MatchError(ContainSubstring("buildpack's release output invalid")))
 			Expect(err.(builder.DescriptiveError).ExitCode).To(Equal(224))
 		})
 	})
@@ -929,9 +922,8 @@ var _ = Describe("Building", func() {
 
 		It("should exit with an error", func() {
 			err := runner.Run()
-			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(ContainSubstring("Failed to build droplet release")))
 			Expect(err.(builder.DescriptiveError).ExitCode).To(Equal(224))
-			Expect(err.Error()).To(ContainSubstring("Failed to build droplet release"))
 		})
 	})
 
