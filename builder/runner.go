@@ -38,7 +38,7 @@ func (runner *Runner) Run() error {
 	//set up the world
 	err := runner.makeDirectories()
 	if err != nil {
-		return NewDescriptiveError(err, "Failed to set up filesystem when generating droplet")
+		return errors.Wrap(err, "Failed to set up filesystem when generating droplet")
 	}
 
 	//detect, compile, release
@@ -66,7 +66,7 @@ func (runner *Runner) Run() error {
 	log.Println("Building droplet release")
 	releaseInfo, err := runner.release(detectedBuildpackDir)
 	if err != nil {
-		return NewDescriptiveError(fmt.Errorf("%s %s", "Failed to build droplet release", err.Error()), ReleaseFailMsg)
+		return NewReleaseFailError(errors.Wrap(err, "Failed to build droplet release"))
 	}
 
 	tarPath, err := runner.findTar()
@@ -108,24 +108,24 @@ func (runner *Runner) supplyOrDetect() (string, []BuildpackMetadata, error) {
 func (runner *Runner) createArtifacts(tarPath string, buildpackMetadata []BuildpackMetadata, releaseInfo Release) error {
 	err := runner.saveInfo(buildpackMetadata, releaseInfo)
 	if err != nil {
-		return NewDescriptiveError(err, "Failed to encode generated metadata")
+		return errors.Wrap(err, "Failed to encode generated metadata")
 	}
 
 	for _, name := range []string{"tmp", "logs"} {
 		if err = os.MkdirAll(filepath.Join(runner.contentsDir, name), 0755); err != nil {
-			return NewDescriptiveError(err, "Failed to set up droplet filesystem")
+			return errors.Wrap(err, "Failed to set up droplet filesystem")
 		}
 	}
 
 	appDir := filepath.Join(runner.contentsDir, "app")
 	err = runner.copyApp(runner.config.BuildDir, appDir)
 	if err != nil {
-		return NewDescriptiveError(err, "Failed to copy compiled droplet")
+		return errors.Wrap(err, "Failed to copy compiled droplet")
 	}
 
 	err = exec.Command(tarPath, "-czf", runner.config.OutputDropletLocation, "-C", runner.contentsDir, ".").Run()
 	if err != nil {
-		return NewDescriptiveError(err, "Failed to compress droplet filesystem")
+		return errors.Wrap(err, "Failed to compress droplet filesystem")
 	}
 
 	return nil
@@ -134,12 +134,12 @@ func (runner *Runner) createArtifacts(tarPath string, buildpackMetadata []Buildp
 func (runner *Runner) createCache(tarPath string) error {
 	err := os.MkdirAll(filepath.Dir(runner.config.OutputBuildArtifactsCache), 0755)
 	if err != nil {
-		return NewDescriptiveError(err, "Failed to create output build artifacts cache dir")
+		return errors.Wrap(err, "Failed to create output build artifacts cache dir")
 	}
 
 	err = exec.Command(tarPath, "-czf", runner.config.OutputBuildArtifactsCache, "-C", runner.config.BuildArtifactsCacheDir(), ".").Run()
 	if err != nil {
-		return NewDescriptiveError(err, "Failed to compress build artifacts")
+		return errors.Wrap(err, "Failed to compress build artifacts")
 	}
 
 	return nil
@@ -240,7 +240,7 @@ func (runner *Runner) buildpackPath(buildpack string) (string, error) {
 
 	files, err := ioutil.ReadDir(buildpackPath)
 	if err != nil {
-		return "", NewDescriptiveError(nil, "Failed to read buildpack directory '%s' for buildpack '%s'", buildpackPath, buildpack)
+		return "", errors.Wrapf(err, "Failed to read buildpack directory '%s' for buildpack '%s'", buildpackPath, buildpack)
 	}
 
 	if len(files) == 1 {
@@ -251,7 +251,7 @@ func (runner *Runner) buildpackPath(buildpack string) (string, error) {
 		}
 	}
 
-	return "", NewDescriptiveError(nil, "malformed buildpack does not contain a /bin dir: %s", buildpack)
+	return "", fmt.Errorf("malformed buildpack does not contain a /bin dir: %s", buildpack)
 }
 
 func (runner *Runner) pathHasBinDirectory(pathToTest string) bool {
@@ -283,13 +283,13 @@ func (runner *Runner) runSupplyBuildpacks() (string, []BuildpackMetadata, error)
 		buildpackPath, err := runner.buildpackPath(buildpack)
 		if err != nil {
 			logError(err.Error())
-			return "", nil, NewDescriptiveError(err, SupplyFailMsg)
+			return "", nil, NewSupplyFailError(err)
 		}
 
 		err = runner.run(exec.Command(filepath.Join(buildpackPath, "bin", "supply"), runner.config.BuildDir, runner.supplyCachePath(buildpack), runner.depsDir, runner.config.DepsIndex(i)), os.Stdout)
 		if err != nil {
 			logError(fmt.Sprintf("supply script failed %s", err.Error()))
-			return "", nil, NewDescriptiveError(err, SupplyFailMsg)
+			return "", nil, NewSupplyFailError(err)
 		}
 	}
 
@@ -297,7 +297,7 @@ func (runner *Runner) runSupplyBuildpacks() (string, []BuildpackMetadata, error)
 	finalPath, err := runner.buildpackPath(finalBuildpack)
 	if err != nil {
 		logError(err.Error())
-		return "", nil, NewDescriptiveError(err, SupplyFailMsg)
+		return "", nil, NewSupplyFailError(err)
 	}
 
 	buildpacks := runner.buildpacksMetadata(runner.config.BuildpackOrder)
@@ -309,15 +309,15 @@ func (runner *Runner) validateSupplyBuildpacks() error {
 		buildpackPath, err := runner.buildpackPath(buildpack)
 		if err != nil {
 			logError(err.Error())
-			return NewDescriptiveError(err, SupplyFailMsg)
+			return NewSupplyFailError(err)
 		}
 
 		if hasSupply, err := hasSupply(buildpackPath); err != nil {
 			logError(fmt.Sprintf("failed to check if supply script exists %s", err.Error()))
-			return NewDescriptiveError(err, SupplyFailMsg)
+			return NewSupplyFailError(err)
 		} else if !hasSupply {
 			logError("supply script missing")
-			return NewDescriptiveError(err, NoSupplyScriptFailMsg)
+			return NewNoSupplyScriptFailError(err)
 		}
 	}
 	return nil
@@ -329,23 +329,23 @@ func (runner *Runner) runFinalize(buildpackPath string) error {
 
 	hasFinalize, err := hasFinalize(buildpackPath)
 	if err != nil {
-		return NewDescriptiveError(err, FinalizeFailMsg)
+		return NewFinalizeFailError(err)
 	}
 
 	if hasFinalize {
 		hasSupply, err := hasSupply(buildpackPath)
 		if err != nil {
-			return NewDescriptiveError(err, SupplyFailMsg)
+			return NewSupplyFailError(err)
 		}
 
 		if hasSupply {
 			if err := runner.run(exec.Command(filepath.Join(buildpackPath, "bin", "supply"), runner.config.BuildDir, cacheDir, runner.depsDir, depsIdx), os.Stdout); err != nil {
-				return NewDescriptiveError(err, SupplyFailMsg)
+				return NewSupplyFailError(err)
 			}
 		}
 
 		if err := runner.run(exec.Command(filepath.Join(buildpackPath, "bin", "finalize"), runner.config.BuildDir, cacheDir, runner.depsDir, depsIdx, runner.profileDir), os.Stdout); err != nil {
-			return NewDescriptiveError(err, FinalizeFailMsg)
+			return NewFinalizeFailError(err)
 		}
 	} else {
 		if len(runner.config.SupplyBuildpacks()) > 0 {
@@ -354,12 +354,12 @@ func (runner *Runner) runFinalize(buildpackPath string) error {
 
 		// remove unused deps sub dir
 		if err := os.RemoveAll(filepath.Join(runner.depsDir, depsIdx)); err != nil {
-			return NewDescriptiveError(err, CompileFailMsg)
+			return NewCompileFailError(err)
 		}
 
 		if err := runner.run(exec.Command(filepath.Join(buildpackPath, "bin", "compile"), runner.config.BuildDir, cacheDir), os.Stdout); err != nil {
 			logError(fmt.Sprintf("compile script failed %s", err.Error()))
-			return NewDescriptiveError(fmt.Errorf("%s %s", "Failed to compile droplet", err.Error()), CompileFailMsg)
+			return NewCompileFailError(errors.Wrap(err, "failed to compile droplet"))
 		}
 	}
 
@@ -420,7 +420,7 @@ func (runner *Runner) readProcfile() (map[string]string, error) {
 func (runner *Runner) release(buildpackDir string) (Release, error) {
 	startCommands, err := runner.readProcfile()
 	if err != nil {
-		return Release{}, NewDescriptiveError(err, "Failed to read command from Procfile")
+		return Release{}, errors.Wrap(err, "Failed to read command from Procfile")
 	}
 
 	output := new(bytes.Buffer)
@@ -433,7 +433,7 @@ func (runner *Runner) release(buildpackDir string) (Release, error) {
 
 	err = yaml.Unmarshal(output.Bytes(), &parsedRelease)
 	if err != nil {
-		return Release{}, NewDescriptiveError(err, "buildpack's release output invalid")
+		return Release{}, errors.Wrap(err, "buildpack's release output invalid")
 	}
 
 	if len(startCommands) > 0 {

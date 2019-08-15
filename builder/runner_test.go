@@ -745,7 +745,7 @@ var _ = Describe("Building", func() {
 		})
 
 		It("fails", func() {
-			Expect(runner.Run()).To(MatchError(ContainSubstring("Failed to read command from Procfile: exit status 1 - internal error: invalid YAML")))
+			Expect(runner.Run()).To(MatchError(ContainSubstring("Failed to read command from Procfile")))
 		})
 	})
 
@@ -774,7 +774,7 @@ var _ = Describe("Building", func() {
 
 		It("should exit with an error", func() {
 			err := runner.Run()
-			Expect(err).To(MatchError(ContainSubstring("Failed to compile droplet")))
+			Expect(err).To(MatchError(ContainSubstring("failed to compile droplet")))
 			Expect(err.(builder.DescriptiveError).ExitCode).To(Equal(223))
 		})
 
