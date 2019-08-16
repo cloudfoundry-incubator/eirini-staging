@@ -37,6 +37,8 @@ var _ = Describe("Building", func() {
 
 		buildpackFixtures = filepath.Join("fixtures", "buildpacks", "unix")
 		appFixtures       = filepath.Join("fixtures", "apps")
+
+		userFacingError error
 	)
 
 	cpBuildpack := func(buildpack string) {
@@ -93,6 +95,8 @@ var _ = Describe("Building", func() {
 		}
 
 		runner = builder.NewRunner(&conf)
+		userFacingError = runner.Run()
+
 	})
 
 	resultJSON := func() []byte {
@@ -128,8 +132,8 @@ var _ = Describe("Building", func() {
 					Expect(os.Chmod(binDetect, 0644)).To(Succeed())
 				})
 
-				JustBeforeEach(func() {
-					runner.Run()
+				It("is successful", func() {
+					Expect(userFacingError).NotTo(HaveOccurred())
 				})
 
 				It("should warn that detect is not executable", func() {
@@ -165,9 +169,7 @@ var _ = Describe("Building", func() {
 				var files []string
 
 				JustBeforeEach(func() {
-					err := runner.Run()
-					Expect(err).NotTo(HaveOccurred())
-
+					Expect(userFacingError).NotTo(HaveOccurred())
 					result, err := exec.Command("tar", "-tzf", outputDroplet).Output()
 					Expect(err).NotTo(HaveOccurred())
 					files = removeTrailingSpace(strings.Split(string(result), "\n"))
@@ -207,11 +209,6 @@ var _ = Describe("Building", func() {
 			})
 
 			Describe("the result.json, which is used to communicate back to the stager", func() {
-				JustBeforeEach(func() {
-					err := runner.Run()
-					Expect(err).NotTo(HaveOccurred())
-				})
-
 				It("exists, and contains the detected buildpack", func() {
 					Expect(resultJSON()).To(MatchJSON(`{
 						"process_types":{"web":"the start command"},
@@ -277,11 +274,6 @@ var _ = Describe("Building", func() {
 			skipDetect = true
 		})
 
-		JustBeforeEach(func() {
-			err := runner.Run()
-			Expect(err).NotTo(HaveOccurred())
-		})
-
 		Describe("the contents of the output tgz", func() {
 			var files []string
 
@@ -327,11 +319,11 @@ var _ = Describe("Building", func() {
 
 				It("contains an /deps/xxxxx dir with the contents of the supply commands", func() {
 					content, err := exec.Command("tar", "-xzOf", outputDroplet, "./deps/0/supplied").CombinedOutput()
-					Expect(err).To(BeNil())
+					Expect(err).NotTo(HaveOccurred())
 					Expect(strings.TrimRight(string(content), " \r\n")).To(Equal("always-detects-creates-buildpack-artifacts"))
 
 					content, err = exec.Command("tar", "-xzOf", outputDroplet, "./deps/1/supplied").Output()
-					Expect(err).To(BeNil())
+					Expect(err).NotTo(HaveOccurred())
 					Expect(strings.TrimRight(string(content), " \r\n")).To(Equal("always-detects-buildpack"))
 
 					Expect(files).ToNot(ContainElement("./deps/2/supplied"))
@@ -343,7 +335,7 @@ var _ = Describe("Building", func() {
 					Expect(files).To(ContainElement("./app/compiled"))
 
 					content, err := exec.Command("tar", "-xzOf", outputDroplet, "./app/compiled").Output()
-					Expect(err).To(BeNil())
+					Expect(err).NotTo(HaveOccurred())
 					Expect(strings.TrimRight(string(content), " \r\n")).To(Equal("also-always-detects-buildpack"))
 				})
 
@@ -364,15 +356,15 @@ var _ = Describe("Building", func() {
 
 				It("contains an /deps/xxxxx dir with the contents of the supply commands", func() {
 					content, err := exec.Command("tar", "-xzOf", outputDroplet, "./deps/0/supplied").Output()
-					Expect(err).To(BeNil())
+					Expect(err).NotTo(HaveOccurred())
 					Expect(strings.TrimRight(string(content), " \r\n")).To(Equal("always-detects-creates-buildpack-artifacts"))
 
 					content, err = exec.Command("tar", "-xzOf", outputDroplet, "./deps/1/supplied").Output()
-					Expect(err).To(BeNil())
+					Expect(err).NotTo(HaveOccurred())
 					Expect(strings.TrimRight(string(content), " \r\n")).To(Equal("always-detects-buildpack"))
 
 					content, err = exec.Command("tar", "-xzOf", outputDroplet, "./deps/2/supplied").Output()
-					Expect(err).To(BeNil())
+					Expect(err).NotTo(HaveOccurred())
 					Expect(strings.TrimRight(string(content), " \r\n")).To(Equal("has-finalize-buildpack"))
 				})
 
@@ -382,7 +374,7 @@ var _ = Describe("Building", func() {
 					Expect(files).To(ContainElement("./app/finalized"))
 
 					content, err := exec.Command("tar", "-xzOf", outputDroplet, "./app/finalized").Output()
-					Expect(err).To(BeNil())
+					Expect(err).NotTo(HaveOccurred())
 					Expect(strings.TrimRight(string(content), " \r\n")).To(Equal("has-finalize-buildpack"))
 				})
 
@@ -407,11 +399,11 @@ var _ = Describe("Building", func() {
 
 				It("contains an /deps/xxxxx dir with the contents of the supply commands", func() {
 					content, err := exec.Command("tar", "-xzOf", outputDroplet, "./deps/0/supplied").Output()
-					Expect(err).To(BeNil())
+					Expect(err).NotTo(HaveOccurred())
 					Expect(strings.TrimRight(string(content), " \r\n")).To(Equal("always-detects-creates-buildpack-artifacts"))
 
 					content, err = exec.Command("tar", "-xzOf", outputDroplet, "./deps/1/supplied").Output()
-					Expect(err).To(BeNil())
+					Expect(err).NotTo(HaveOccurred())
 					Expect(strings.TrimRight(string(content), " \r\n")).To(Equal("always-detects-buildpack"))
 
 					Expect(files).ToNot(ContainElement("./deps/2/supplied"))
@@ -423,7 +415,7 @@ var _ = Describe("Building", func() {
 					Expect(files).To(ContainElement("./app/finalized"))
 
 					content, err := exec.Command("tar", "-xzOf", outputDroplet, "./app/finalized").Output()
-					Expect(err).To(BeNil())
+					Expect(err).NotTo(HaveOccurred())
 					Expect(strings.TrimRight(string(content), " \r\n")).To(Equal("has-finalize-no-supply-buildpack"))
 				})
 			})
@@ -457,19 +449,19 @@ var _ = Describe("Building", func() {
 			})
 
 			It("should log the error", func() {
-				Expect(runner.Run()).To(MatchError(ContainSubstring("no release script")))
+				Expect(userFacingError).To(MatchError(ContainSubstring("no release script")))
 			})
 		})
 
 		Context("when there is a release script", func() {
-			JustBeforeEach(func() {
-				Expect(runner.Run()).To(Succeed())
-			})
-
 			Context("when the app has a Procfile", func() {
 				Context("with web defined", func() {
 					BeforeEach(func() {
 						cp(filepath.Join(appFixtures, "with-procfile-with-web", "Procfile"), buildDir)
+					})
+
+					It("is successful", func() {
+						Expect(userFacingError).NotTo(HaveOccurred())
 					})
 
 					It("uses the Procfile for execution_metadata", func() {
@@ -491,6 +483,10 @@ var _ = Describe("Building", func() {
 				Context("without web", func() {
 					BeforeEach(func() {
 						cp(filepath.Join(appFixtures, "with-procfile", "Procfile"), buildDir)
+					})
+
+					It("is successful", func() {
+						Expect(userFacingError).NotTo(HaveOccurred())
 					})
 
 					It("displays an error and returns the Procfile data without web", func() {
@@ -518,9 +514,13 @@ var _ = Describe("Building", func() {
 					cp(filepath.Join(appFixtures, "bash-app", "app.sh"), buildDir)
 				})
 
-				It("fails", func() {
+				It("outputs log messages", func() {
 					Expect(logOut).To(gbytes.Say("No start command specified by buildpack or via Procfile."))
 					Expect(logOut).To(gbytes.Say("App will not start unless a command is provided at runtime."))
+				})
+
+				It("is successful", func() {
+					Expect(userFacingError).NotTo(HaveOccurred())
 				})
 			})
 		})
@@ -533,15 +533,14 @@ var _ = Describe("Building", func() {
 			cpBuildpack("always-detects")
 		})
 
-		JustBeforeEach(func() {
-			err := runner.Run()
-			Expect(err).NotTo(HaveOccurred())
-		})
-
 		Context("when the app has a Procfile", func() {
 			Context("with web defined", func() {
 				BeforeEach(func() {
 					cp(filepath.Join(appFixtures, "with-procfile-with-web", "Procfile"), buildDir)
+				})
+
+				It("is successful", func() {
+					Expect(userFacingError).NotTo(HaveOccurred())
 				})
 
 				It("merges the Procfile and the buildpack for execution_metadata", func() {
@@ -563,6 +562,10 @@ var _ = Describe("Building", func() {
 			Context("without web", func() {
 				BeforeEach(func() {
 					cp(filepath.Join(appFixtures, "with-procfile", "Procfile"), buildDir)
+				})
+
+				It("is successful", func() {
+					Expect(userFacingError).NotTo(HaveOccurred())
 				})
 
 				It("merges the Procfile but uses the buildpack for execution_metadata", func() {
@@ -602,6 +605,10 @@ var _ = Describe("Building", func() {
 						"execution_metadata": ""
 					}`))
 			})
+
+			It("is successful", func() {
+				Expect(userFacingError).NotTo(HaveOccurred())
+			})
 		})
 	})
 
@@ -612,15 +619,14 @@ var _ = Describe("Building", func() {
 			cpBuildpack("always-detects-non-web")
 		})
 
-		JustBeforeEach(func() {
-			Expect(runner.Run()).To(Succeed())
-
-		})
-
 		Context("when the app has a Procfile", func() {
 			Context("with web defined", func() {
 				BeforeEach(func() {
 					cp(filepath.Join(appFixtures, "with-procfile-with-web", "Procfile"), buildDir)
+				})
+
+				It("is successful", func() {
+					Expect(userFacingError).NotTo(HaveOccurred())
 				})
 
 				It("merges the Procfile for execution_metadata", func() {
@@ -642,6 +648,10 @@ var _ = Describe("Building", func() {
 			Context("without web", func() {
 				BeforeEach(func() {
 					cp(filepath.Join(appFixtures, "with-procfile", "Procfile"), buildDir)
+				})
+
+				It("is successful", func() {
+					Expect(userFacingError).NotTo(HaveOccurred())
 				})
 
 				It("displays an error and returns the Procfile data without web", func() {
@@ -669,7 +679,11 @@ var _ = Describe("Building", func() {
 				cp(filepath.Join(appFixtures, "bash-app", "app.sh"), buildDir)
 			})
 
-			It("fails", func() {
+			It("is successful", func() {
+				Expect(userFacingError).NotTo(HaveOccurred())
+			})
+
+			It("outputs log messages", func() {
 				Expect(logOut).To(gbytes.Say("No start command specified by buildpack or via Procfile."))
 				Expect(logOut).To(gbytes.Say("App will not start unless a command is provided at runtime."))
 				Expect(resultJSON()).To(MatchJSON(`{
@@ -699,7 +713,7 @@ var _ = Describe("Building", func() {
 		})
 
 		It("fails", func() {
-			Expect(runner.Run()).To(MatchError(ContainSubstring("Failed to read command from Procfile")))
+			Expect(userFacingError).To(MatchError(ContainSubstring("Failed to read command from Procfile")))
 		})
 	})
 
@@ -712,9 +726,8 @@ var _ = Describe("Building", func() {
 		})
 
 		It("should exit with an error", func() {
-			err := runner.Run()
-			Expect(err).To(MatchError(ContainSubstring("None of the buildpacks detected a compatible application")))
-			Expect(err.(builder.DescriptiveError).ExitCode).To(Equal(222))
+			Expect(userFacingError).To(MatchError(ContainSubstring("None of the buildpacks detected a compatible application")))
+			Expect(userFacingError.(builder.DescriptiveError).ExitCode).To(Equal(222))
 		})
 	})
 
@@ -727,14 +740,11 @@ var _ = Describe("Building", func() {
 		})
 
 		It("should exit with an error", func() {
-			err := runner.Run()
-			Expect(err).To(MatchError(ContainSubstring("failed to compile droplet")))
-			Expect(err.(builder.DescriptiveError).ExitCode).To(Equal(223))
+			Expect(userFacingError).To(MatchError(ContainSubstring("failed to compile droplet")))
+			Expect(userFacingError.(builder.DescriptiveError).ExitCode).To(Equal(223))
 		})
 
 		It("should log the error", func() {
-			_ = runner.Run()
-
 			Expect(logOut).To(gbytes.Say("compile script failed"))
 		})
 	})
@@ -750,13 +760,11 @@ var _ = Describe("Building", func() {
 		})
 
 		It("should exit with an error", func() {
-			err := runner.Run()
-			Expect(err).To(MatchError(ContainSubstring("Failed to run all supply scripts")))
-			Expect(err.(builder.DescriptiveError).ExitCode).To(Equal(225))
+			Expect(userFacingError).To(MatchError(ContainSubstring("Failed to run all supply scripts")))
+			Expect(userFacingError.(builder.DescriptiveError).ExitCode).To(Equal(225))
 		})
 
 		It("should log the error", func() {
-			_ = runner.Run()
 			Expect(logOut).To(gbytes.Say("supply script failed"))
 		})
 	})
@@ -772,23 +780,16 @@ var _ = Describe("Building", func() {
 		})
 
 		It("should exit with a clear error", func() {
-			err := runner.Run()
-			Expect(err).To(MatchError(ContainSubstring("Error: one of the buildpacks chosen to supply dependencies does not support multi-buildpack apps")))
-			Expect(err.(builder.DescriptiveError).ExitCode).To(Equal(225))
+			Expect(userFacingError).To(MatchError(ContainSubstring("Error: one of the buildpacks chosen to supply dependencies does not support multi-buildpack apps")))
+			Expect(userFacingError.(builder.DescriptiveError).ExitCode).To(Equal(225))
 		})
 
 		It("should log the error", func() {
-			_ = runner.Run()
-
 			Expect(logOut).To(gbytes.Say("supply script missing"))
 		})
 	})
 
 	Context("when a the final buildpack has compile but not finalize", func() {
-		JustBeforeEach(func() {
-			Expect(runner.Run()).To(Succeed())
-		})
-
 		Context("single buildpack", func() {
 			BeforeEach(func() {
 				buildpackOrder = "always-detects"
@@ -796,6 +797,10 @@ var _ = Describe("Building", func() {
 
 				cpBuildpack("always-detects")
 				cp(filepath.Join(appFixtures, "bash-app", "app.sh"), buildDir)
+			})
+
+			It("is successful", func() {
+				Expect(userFacingError).NotTo(HaveOccurred())
 			})
 
 			It("should not display a warning about multi-buildpack compatibility", func() {
@@ -813,6 +818,10 @@ var _ = Describe("Building", func() {
 				cp(filepath.Join(appFixtures, "bash-app", "app.sh"), buildDir)
 			})
 
+			It("is successful", func() {
+				Expect(userFacingError).NotTo(HaveOccurred())
+			})
+
 			It("should display a warning about multi-buildpack compatibility", func() {
 				Expect(logOut).To(gbytes.Say("Warning: the last buildpack is not compatible with multi-buildpack apps and cannot make use of any dependencies supplied by the buildpacks specified before it"))
 			})
@@ -828,9 +837,8 @@ var _ = Describe("Building", func() {
 		})
 
 		It("should exit with an error", func() {
-			err := runner.Run()
-			Expect(err).To(MatchError(ContainSubstring("buildpack's release output invalid")))
-			Expect(err.(builder.DescriptiveError).ExitCode).To(Equal(224))
+			Expect(userFacingError).To(MatchError(ContainSubstring("buildpack's release output invalid")))
+			Expect(userFacingError.(builder.DescriptiveError).ExitCode).To(Equal(224))
 		})
 	})
 
@@ -843,9 +851,8 @@ var _ = Describe("Building", func() {
 		})
 
 		It("should exit with an error", func() {
-			err := runner.Run()
-			Expect(err).To(MatchError(ContainSubstring("Failed to build droplet release")))
-			Expect(err.(builder.DescriptiveError).ExitCode).To(Equal(224))
+			Expect(userFacingError).To(MatchError(ContainSubstring("Failed to build droplet release")))
+			Expect(userFacingError.(builder.DescriptiveError).ExitCode).To(Equal(224))
 		})
 	})
 
@@ -857,16 +864,14 @@ var _ = Describe("Building", func() {
 			nestedBuildpackHash := "70d137ae4ee01fbe39058ccdebf48460"
 
 			nestedBuildpackDir := filepath.Join(buildpacksDir, nestedBuildpackHash)
-			err := os.MkdirAll(nestedBuildpackDir, 0777)
-			Expect(err).NotTo(HaveOccurred())
+			Expect(os.MkdirAll(nestedBuildpackDir, 0777)).To(Succeed())
 
 			cp(filepath.Join(buildpackFixtures, "always-detects"), nestedBuildpackDir)
 			cp(filepath.Join(appFixtures, "bash-app", "app.sh"), buildDir)
 		})
 
 		It("should detect the nested buildpack", func() {
-			err := runner.Run()
-			Expect(err).NotTo(HaveOccurred())
+			Expect(userFacingError).NotTo(HaveOccurred())
 		})
 	})
 })
