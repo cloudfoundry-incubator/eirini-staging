@@ -18,10 +18,12 @@ import (
 )
 
 type Runner struct {
-	config      *Config
-	depsDir     string
-	contentsDir string
-	profileDir  string
+	config       *Config
+	depsDir      string
+	contentsDir  string
+	profileDir   string
+	BuildpackOut io.Writer
+	BuildpackErr io.Writer
 }
 
 type Release struct {
@@ -30,7 +32,9 @@ type Release struct {
 
 func NewRunner(config *Config) *Runner {
 	return &Runner{
-		config: config,
+		config:       config,
+		BuildpackOut: os.Stdout,
+		BuildpackErr: os.Stderr,
 	}
 }
 
@@ -285,7 +289,7 @@ func (runner *Runner) runSupplyBuildpacks() (string, []BuildpackMetadata, error)
 			return "", nil, NewSupplyFailError(err)
 		}
 
-		err = runner.run(exec.Command(filepath.Join(buildpackPath, "bin", "supply"), runner.config.BuildDir, runner.supplyCachePath(buildpack), runner.depsDir, runner.config.DepsIndex(i)), os.Stdout)
+		err = runner.run(exec.Command(filepath.Join(buildpackPath, "bin", "supply"), runner.config.BuildDir, runner.supplyCachePath(buildpack), runner.depsDir, runner.config.DepsIndex(i)))
 		if err != nil {
 			logError(fmt.Sprintf("supply script failed %s", err.Error()))
 			return "", nil, NewSupplyFailError(err)
@@ -337,12 +341,12 @@ func (runner *Runner) runFinalize(buildpackPath string) error {
 		}
 
 		if hasSupply {
-			if err := runner.run(exec.Command(filepath.Join(buildpackPath, "bin", "supply"), runner.config.BuildDir, cacheDir, runner.depsDir, depsIdx), os.Stdout); err != nil {
+			if err := runner.run(exec.Command(filepath.Join(buildpackPath, "bin", "supply"), runner.config.BuildDir, cacheDir, runner.depsDir, depsIdx)); err != nil {
 				return NewSupplyFailError(err)
 			}
 		}
 
-		if err := runner.run(exec.Command(filepath.Join(buildpackPath, "bin", "finalize"), runner.config.BuildDir, cacheDir, runner.depsDir, depsIdx, runner.profileDir), os.Stdout); err != nil {
+		if err := runner.run(exec.Command(filepath.Join(buildpackPath, "bin", "finalize"), runner.config.BuildDir, cacheDir, runner.depsDir, depsIdx, runner.profileDir)); err != nil {
 			return NewFinalizeFailError(err)
 		}
 	} else {
@@ -355,7 +359,7 @@ func (runner *Runner) runFinalize(buildpackPath string) error {
 			return NewCompileFailError(err)
 		}
 
-		if err := runner.run(exec.Command(filepath.Join(buildpackPath, "bin", "compile"), runner.config.BuildDir, cacheDir), os.Stdout); err != nil {
+		if err := runner.run(exec.Command(filepath.Join(buildpackPath, "bin", "compile"), runner.config.BuildDir, cacheDir)); err != nil {
 			logError(fmt.Sprintf("compile script failed %s", err.Error()))
 			return NewCompileFailError(errors.Wrap(err, "failed to compile droplet"))
 		}
@@ -377,8 +381,7 @@ func (runner *Runner) detect() (string, []BuildpackMetadata, error) {
 			continue
 		}
 
-		output := new(bytes.Buffer)
-		err = runner.run(exec.Command(filepath.Join(buildpackPath, "bin", "detect"), runner.config.BuildDir), output)
+		output, err := runner.runWithCapturing(exec.Command(filepath.Join(buildpackPath, "bin", "detect"), runner.config.BuildDir))
 
 		if err == nil {
 			buildpacks := runner.buildpacksMetadata([]string{buildpack})
@@ -421,8 +424,7 @@ func (runner *Runner) release(buildpackDir string) (Release, error) {
 		return Release{}, errors.Wrap(err, "Failed to read command from Procfile")
 	}
 
-	output := new(bytes.Buffer)
-	err = runner.run(exec.Command(filepath.Join(buildpackDir, "bin", "release"), runner.config.BuildDir), output)
+	output, err := runner.runWithCapturing(exec.Command(filepath.Join(buildpackDir, "bin", "release"), runner.config.BuildDir))
 	if err != nil {
 		return Release{}, errors.Wrap(err, "no release script")
 	}
@@ -474,15 +476,23 @@ func (runner *Runner) saveInfo(buildpacks []BuildpackMetadata, releaseInfo Relea
 	))
 }
 
-func (runner *Runner) run(cmd *exec.Cmd, output io.Writer) error {
-	cmd.Stdout = output
-	cmd.Stderr = os.Stderr
+func (runner *Runner) run(cmd *exec.Cmd) error {
+	cmd.Stdout = runner.BuildpackOut
+	cmd.Stderr = runner.BuildpackErr
 
 	return cmd.Run()
 }
 
+func (runner *Runner) runWithCapturing(cmd *exec.Cmd) (*bytes.Buffer, error) {
+	output := new(bytes.Buffer)
+	cmd.Stdout = output
+	cmd.Stderr = runner.BuildpackErr
+
+	return output, cmd.Run()
+}
+
 func (runner *Runner) copyApp(buildDir, stageDir string) error {
-	return runner.run(exec.Command("cp", "-a", buildDir, stageDir), os.Stdout)
+	return runner.run(exec.Command("cp", "-a", buildDir, stageDir))
 }
 
 func (runner *Runner) warnIfDetectNotExecutable(buildpackPath string) error {

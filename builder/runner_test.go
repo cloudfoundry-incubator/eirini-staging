@@ -95,6 +95,8 @@ var _ = Describe("Building", func() {
 		}
 
 		runner = builder.NewRunner(&conf)
+		runner.BuildpackOut = GinkgoWriter
+		runner.BuildpackErr = GinkgoWriter
 		userFacingError = runner.Run()
 
 	})
