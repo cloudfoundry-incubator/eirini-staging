@@ -4,7 +4,6 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -17,6 +16,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 )
 
@@ -32,11 +32,9 @@ var _ = Describe("Building", func() {
 		skipDetect                bool
 		buildpackOrder            string
 
-		pr *io.PipeReader
-		pw *io.PipeWriter
-
 		runner *builder.Runner
 		conf   builder.Config
+		logOut *gbytes.Buffer
 
 		buildpackFixtures = filepath.Join("fixtures", "buildpacks", "unix")
 		appFixtures       = filepath.Join("fixtures", "apps")
@@ -49,8 +47,6 @@ var _ = Describe("Building", func() {
 
 	BeforeEach(func() {
 		var err error
-
-		pr, pw = io.Pipe()
 
 		tmpDir, err = ioutil.TempDir("", "building-tmp")
 		Expect(err).NotTo(HaveOccurred())
@@ -65,13 +61,9 @@ var _ = Describe("Building", func() {
 		Expect(err).NotTo(HaveOccurred())
 		outputDroplet = outputDropletFile.Name()
 		Expect(outputDropletFile.Close()).To(Succeed())
-
 		outputBuildArtifactsCacheDir, err := ioutil.TempDir(tmpDir, "building-cache-output")
 		Expect(err).NotTo(HaveOccurred())
 		outputBuildArtifactsCache = filepath.Join(outputBuildArtifactsCacheDir, "cache.tgz")
-
-		// buildArtifactsCacheDir, err = ioutil.TempDir(tmpDir, "building-cache")
-		// Expect(err).NotTo(HaveOccurred())
 
 		outputMetadataFile, err := ioutil.TempFile(tmpDir, "building-result")
 		Expect(err).NotTo(HaveOccurred())
@@ -79,10 +71,11 @@ var _ = Describe("Building", func() {
 		Expect(outputMetadataFile.Close()).To(Succeed())
 
 		skipDetect = false
+		logOut = gbytes.NewBuffer()
+		log.SetOutput(logOut)
 	})
 
 	AfterEach(func() {
-		pr.Close()
 		runner.CleanUp()
 
 		Expect(os.RemoveAll(tmpDir)).To(Succeed())
@@ -130,7 +123,6 @@ var _ = Describe("Building", func() {
 			})
 
 			Context("first buildpack detect is not executable", func() {
-
 				BeforeEach(func() {
 					hash := fmt.Sprintf("%x", md5.Sum([]byte("always-detects")))
 					binDetect := filepath.Join(buildpacksDir, hash, "bin", "detect")
@@ -138,17 +130,11 @@ var _ = Describe("Building", func() {
 				})
 
 				JustBeforeEach(func() {
-					go func() {
-						log.SetOutput(pw)
-						_ = runner.Run()
-						pw.Close()
-					}()
+					runner.Run()
 				})
 
 				It("should warn that detect is not executable", func() {
-					out, err := ioutil.ReadAll(pr)
-					Expect(err).NotTo(HaveOccurred())
-					Expect(out).To(ContainSubstring("WARNING: buildpack script '/bin/detect' is not executable"))
+					Expect(logOut).To(gbytes.Say("WARNING: buildpack script '/bin/detect' is not executable"))
 				})
 
 				Context("first buildpack is missing the detect script", func() {
@@ -159,16 +145,11 @@ var _ = Describe("Building", func() {
 					})
 
 					It("should log the missing detect script", func() {
-						out, err := ioutil.ReadAll(pr)
-						Expect(err).NotTo(HaveOccurred())
-						Expect(out).To(ContainSubstring("failed to find detect script"))
+						Expect(logOut).To(gbytes.Say("failed to find detect script"))
 					})
 				})
 
 				It("should have chosen the second buildpack detect", func() {
-					_, err := ioutil.ReadAll(pr)
-					Expect(err).NotTo(HaveOccurred())
-
 					data := &struct {
 						LifeCycle struct {
 							Key string `json:"buildpack_key"`
@@ -464,11 +445,6 @@ var _ = Describe("Building", func() {
 	})
 
 	Context("with a buildpack that has no commands", func() {
-		var (
-			err error
-			out []byte
-		)
-
 		BeforeEach(func() {
 			buildpackOrder = "release-without-command"
 			cpBuildpack("release-without-command")
@@ -488,16 +464,7 @@ var _ = Describe("Building", func() {
 
 		Context("when there is a release script", func() {
 			JustBeforeEach(func() {
-				go func() {
-					log.SetOutput(pw)
-					defer GinkgoRecover()
-					err = runner.Run()
-					Expect(err).NotTo(HaveOccurred())
-					pw.Close()
-				}()
-
-				out, err = ioutil.ReadAll(pr)
-				Expect(err).NotTo(HaveOccurred())
+				Expect(runner.Run()).To(Succeed())
 			})
 
 			Context("when the app has a Procfile", func() {
@@ -528,8 +495,8 @@ var _ = Describe("Building", func() {
 					})
 
 					It("displays an error and returns the Procfile data without web", func() {
-						Expect(string(out)).To(ContainSubstring("No start command specified by buildpack or via Procfile."))
-						Expect(string(out)).To(ContainSubstring("App will not start unless a command is provided at runtime."))
+						Expect(logOut).To(gbytes.Say("No start command specified by buildpack or via Procfile."))
+						Expect(logOut).To(gbytes.Say("App will not start unless a command is provided at runtime."))
 
 						Expect(resultJSON()).To(MatchJSON(`{
 								"process_types":{"spider":"bogus command"},
@@ -553,8 +520,8 @@ var _ = Describe("Building", func() {
 				})
 
 				It("fails", func() {
-					Expect(string(out)).To(ContainSubstring("No start command specified by buildpack or via Procfile."))
-					Expect(string(out)).To(ContainSubstring("App will not start unless a command is provided at runtime."))
+					Expect(logOut).To(gbytes.Say("No start command specified by buildpack or via Procfile."))
+					Expect(logOut).To(gbytes.Say("App will not start unless a command is provided at runtime."))
 				})
 			})
 		})
@@ -640,10 +607,6 @@ var _ = Describe("Building", func() {
 	})
 
 	Context("with a buildpack that determines a start non-web-command", func() {
-		var (
-			out []byte
-			err error
-		)
 
 		BeforeEach(func() {
 			buildpackOrder = "always-detects-non-web"
@@ -651,16 +614,8 @@ var _ = Describe("Building", func() {
 		})
 
 		JustBeforeEach(func() {
-			go func() {
-				log.SetOutput(pw)
-				defer GinkgoRecover()
-				err = runner.Run()
-				Expect(err).NotTo(HaveOccurred())
-				pw.Close()
-			}()
+			Expect(runner.Run()).To(Succeed())
 
-			out, err = ioutil.ReadAll(pr)
-			Expect(err).NotTo(HaveOccurred())
 		})
 
 		Context("when the app has a Procfile", func() {
@@ -691,8 +646,8 @@ var _ = Describe("Building", func() {
 				})
 
 				It("displays an error and returns the Procfile data without web", func() {
-					Expect(string(out)).To(ContainSubstring("No start command specified by buildpack or via Procfile."))
-					Expect(string(out)).To(ContainSubstring("App will not start unless a command is provided at runtime."))
+					Expect(logOut).To(gbytes.Say("No start command specified by buildpack or via Procfile."))
+					Expect(logOut).To(gbytes.Say("App will not start unless a command is provided at runtime."))
 
 					Expect(resultJSON()).To(MatchJSON(`{
 						"process_types":{"spider":"bogus command", "nonweb":"start nonweb buildpack"},
@@ -716,8 +671,8 @@ var _ = Describe("Building", func() {
 			})
 
 			It("fails", func() {
-				Expect(string(out)).To(ContainSubstring("No start command specified by buildpack or via Procfile."))
-				Expect(string(out)).To(ContainSubstring("App will not start unless a command is provided at runtime."))
+				Expect(logOut).To(gbytes.Say("No start command specified by buildpack or via Procfile."))
+				Expect(logOut).To(gbytes.Say("App will not start unless a command is provided at runtime."))
 				Expect(resultJSON()).To(MatchJSON(`{
 						"process_types":{"nonweb":"start nonweb buildpack"},
 						"lifecycle_type": "buildpack",
@@ -779,16 +734,9 @@ var _ = Describe("Building", func() {
 		})
 
 		It("should log the error", func() {
-			go func() {
-				log.SetOutput(pw)
-				defer GinkgoRecover()
-				_ = runner.Run()
-				pw.Close()
-			}()
+			_ = runner.Run()
 
-			out, err := ioutil.ReadAll(pr)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(out).To(ContainSubstring("compile script failed"))
+			Expect(logOut).To(gbytes.Say("compile script failed"))
 		})
 	})
 
@@ -809,16 +757,8 @@ var _ = Describe("Building", func() {
 		})
 
 		It("should log the error", func() {
-			go func() {
-				log.SetOutput(pw)
-				defer GinkgoRecover()
-				_ = runner.Run()
-				pw.Close()
-			}()
-
-			out, err := ioutil.ReadAll(pr)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(out).To(ContainSubstring("supply script failed"))
+			_ = runner.Run()
+			Expect(logOut).To(gbytes.Say("supply script failed"))
 		})
 	})
 
@@ -839,28 +779,15 @@ var _ = Describe("Building", func() {
 		})
 
 		It("should log the error", func() {
-			go func() {
-				log.SetOutput(pw)
-				defer GinkgoRecover()
-				_ = runner.Run()
-				pw.Close()
-			}()
+			_ = runner.Run()
 
-			out, err := ioutil.ReadAll(pr)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(out).To(ContainSubstring("supply script missing"))
+			Expect(logOut).To(gbytes.Say("supply script missing"))
 		})
 	})
 
 	Context("when a the final buildpack has compile but not finalize", func() {
 		JustBeforeEach(func() {
-			go func() {
-				log.SetOutput(pw)
-				defer GinkgoRecover()
-				err := runner.Run()
-				Expect(err).NotTo(HaveOccurred())
-				pw.Close()
-			}()
+			Expect(runner.Run()).To(Succeed())
 		})
 
 		Context("single buildpack", func() {
@@ -873,9 +800,7 @@ var _ = Describe("Building", func() {
 			})
 
 			It("should not display a warning about multi-buildpack compatibility", func() {
-				out, err := ioutil.ReadAll(pr)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(string(out)).NotTo(ContainSubstring("Warning: the last buildpack is not compatible with multi-buildpack apps and cannot make use of any dependencies supplied by the buildpacks specified before it"))
+				Expect(logOut).NotTo(gbytes.Say("the last buildpack is not compatible with multi-buildpack apps"))
 			})
 		})
 
@@ -890,9 +815,7 @@ var _ = Describe("Building", func() {
 			})
 
 			It("should display a warning about multi-buildpack compatibility", func() {
-				out, err := ioutil.ReadAll(pr)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(out).To(ContainSubstring("Warning: the last buildpack is not compatible with multi-buildpack apps and cannot make use of any dependencies supplied by the buildpacks specified before it"))
+				Expect(logOut).To(gbytes.Say("Warning: the last buildpack is not compatible with multi-buildpack apps and cannot make use of any dependencies supplied by the buildpacks specified before it"))
 			})
 		})
 	})
