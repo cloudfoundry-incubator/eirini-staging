@@ -79,13 +79,11 @@ func (runner *Runner) Run() error {
 	log.Println("Creating app artifact")
 	err = runner.createArtifacts(tarPath, buildpackMetadata, releaseInfo)
 	if err != nil {
-		logError("failed to find runnable app artifact")
 		return errors.Wrap(err, "failed to find runnable app artifact")
 	}
 
 	err = runner.createCache(tarPath)
 	if err != nil {
-		logError("failed to cache runnable app artifact")
 		return errors.Wrap(err, "failed to cache runnable app artifact")
 	}
 
@@ -284,7 +282,6 @@ func (runner *Runner) runSupplyBuildpacks() (string, []BuildpackMetadata, error)
 	for i, buildpack := range runner.config.SupplyBuildpacks() {
 		buildpackPath, err := runner.buildpackPath(buildpack)
 		if err != nil {
-			logError(err.Error())
 			return "", nil, NewSupplyFailError(err)
 		}
 
@@ -298,7 +295,6 @@ func (runner *Runner) runSupplyBuildpacks() (string, []BuildpackMetadata, error)
 	finalBuildpack := runner.config.BuildpackOrder[len(runner.config.SupplyBuildpacks())]
 	finalPath, err := runner.buildpackPath(finalBuildpack)
 	if err != nil {
-		logError(err.Error())
 		return "", nil, NewSupplyFailError(err)
 	}
 
