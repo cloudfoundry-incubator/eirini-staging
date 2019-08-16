@@ -33,7 +33,6 @@ var _ = Describe("Building", func() {
 		buildpackOrder            string
 
 		runner *builder.Runner
-		conf   builder.Config
 		logOut *gbytes.Buffer
 
 		buildpackFixtures = filepath.Join("fixtures", "buildpacks", "unix")
@@ -82,7 +81,7 @@ var _ = Describe("Building", func() {
 	})
 
 	JustBeforeEach(func() {
-		conf = builder.Config{
+		conf := builder.Config{
 			BuildDir:                  buildDir,
 			BuildpacksDir:             buildpacksDir,
 			OutputDropletLocation:     outputDroplet,
