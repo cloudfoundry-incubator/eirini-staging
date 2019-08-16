@@ -431,6 +431,7 @@ var _ = Describe("Building", func() {
 				})
 
 				It("should run successfully", func() {
+					Expect(userFacingError).NotTo(HaveOccurred())
 					Expect(files).To(ContainElement("./app/compiled"))
 				})
 			})
