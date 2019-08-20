@@ -74,26 +74,24 @@ func (e DescriptiveError) Error() string {
 	return fmt.Sprintf("%s: exit status %d - internal error: %s", e.Message, e.ExitCode, e.InnerError.Error())
 }
 
-func NewDescriptiveError(err error, msg string, args ...interface{}) error {
-	var exitCode int
+var DetectFailErr = DescriptiveError{ExitCode: DetectFailCode, Message: FullDetectFailMsg}
 
-	switch msg {
-	case DetectFailMsg:
-		exitCode = DetectFailCode
-	case CompileFailMsg:
-		exitCode = CompileFailCode
-	case ReleaseFailMsg:
-		exitCode = ReleaseFailCode
-	case SupplyFailMsg, NoSupplyScriptFailMsg:
-		exitCode = SupplyFailCode
-	case FinalizeFailMsg:
-		exitCode = FinalizeFailCode
-	default:
-		exitCode = SystemFailCode
-	}
+func NewCompileFailError(err error) error {
+	return DescriptiveError{Message: CompileFailMsg, ExitCode: CompileFailCode, InnerError: err}
+}
 
-	if len(args) == 0 {
-		return DescriptiveError{Message: msg, ExitCode: exitCode, InnerError: err}
-	}
-	return DescriptiveError{Message: fmt.Sprintf(msg, args...), InnerError: err, ExitCode: exitCode}
+func NewReleaseFailError(err error) error {
+	return DescriptiveError{Message: ReleaseFailMsg, ExitCode: ReleaseFailCode, InnerError: err}
+}
+
+func NewSupplyFailError(err error) error {
+	return DescriptiveError{Message: SupplyFailMsg, ExitCode: SupplyFailCode, InnerError: err}
+}
+
+func NewFinalizeFailError(err error) error {
+	return DescriptiveError{Message: FinalizeFailMsg, ExitCode: FinalizeFailCode, InnerError: err}
+}
+
+func NewNoSupplyScriptFailError(err error) error {
+	return DescriptiveError{Message: NoSupplyScriptFailMsg, ExitCode: SupplyFailCode, InnerError: err}
 }

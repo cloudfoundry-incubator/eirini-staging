@@ -41,6 +41,7 @@ func NewResponder(stagingGUID, completionCallback, eiriniAddr, caCert, clientCrt
 }
 
 func (r Responder) RespondWithFailure(failure error) {
+	log.Println(failure.Error())
 	cbResponse := r.createFailureResponse(failure, r.stagingGUID, r.completionCallback)
 
 	if completeErr := r.sendCompleteResponse(cbResponse); completeErr != nil {
