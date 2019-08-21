@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-ginkgo -r -skipPackage integration .
+ginkgo -mod=vendor -race -p -randomizeAllSpecs -randomizeSuites -r -skipPackage integration .

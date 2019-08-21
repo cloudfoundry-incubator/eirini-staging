@@ -1,7 +1,7 @@
 FROM golang:1.12.2-stretch as builder
 WORKDIR /go/src/code.cloudfoundry.org/eirini-staging
 COPY . .
-RUN GOOS=linux go build -a -o /downloader cmd/downloader/downloader.go
+RUN GO111MODULE=on GOOS=linux go build -a -mod vendor -o /downloader cmd/downloader/downloader.go
 
 FROM cloudfoundry/cflinuxfs3
 
