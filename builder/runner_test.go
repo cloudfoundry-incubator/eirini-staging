@@ -245,6 +245,15 @@ var _ = Describe("Building", func() {
 							"execution_metadata": ""
 					 }`))
 					})
+
+					It("should contain staging info about the detected buildpack", func() {
+						stagingInfo, err := exec.Command("tar", "-xzf", outputDroplet, "-O", "./staging_info.yml").Output()
+						Expect(err).NotTo(HaveOccurred())
+
+						expectedYAML := `{"detected_buildpack":"Always Matching","start_command":"procfile-provided start-command"}`
+						Expect(string(stagingInfo)).To(MatchJSON(expectedYAML))
+					})
+
 				})
 
 				Context("when the app does not have a Procfile", func() {
@@ -265,6 +274,14 @@ var _ = Describe("Building", func() {
 							},
 							"execution_metadata": ""
 					 }`))
+					})
+
+					It("should contain staging info about the detected buildpack", func() {
+						stagingInfo, err := exec.Command("tar", "-xzf", outputDroplet, "-O", "./staging_info.yml").Output()
+						Expect(err).NotTo(HaveOccurred())
+
+						expectedYAML := `{"detected_buildpack":"Always Matching","start_command":"the start command"}`
+						Expect(string(stagingInfo)).To(MatchJSON(expectedYAML))
 					})
 				})
 			})
