@@ -1,6 +1,9 @@
 package builder
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 const (
 	Unknown        = "Unknown reason"
@@ -35,7 +38,7 @@ func (e DescriptiveError) Error() string {
 	return fmt.Sprintf("%s: exit status %d - internal error: %s", e.Message, e.ExitCode, e.InnerError.Error())
 }
 
-var DetectFailErr = DescriptiveError{ExitCode: DetectFailCode, Message: FullDetectFailMsg}
+var DetectFailErr = DescriptiveError{ExitCode: DetectFailCode, Message: DetectFailMsg, InnerError: errors.New(FullDetectFailMsg)}
 
 func NewCompileFailError(err error) error {
 	return DescriptiveError{Message: CompileFailMsg, ExitCode: CompileFailCode, InnerError: err}
