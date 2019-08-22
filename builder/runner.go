@@ -26,10 +26,6 @@ type Runner struct {
 	BuildpackErr io.Writer
 }
 
-type Release struct {
-	DefaultProcessTypes ProcessTypes `yaml:"default_process_types"`
-}
-
 func NewRunner(config *Config) *Runner {
 	return &Runner{
 		config:       config,
@@ -73,6 +69,11 @@ func (runner *Runner) Run() error {
 	releaseInfo, err := runner.release(detectedBuildpackDir)
 	if err != nil {
 		return NewReleaseFailError(errors.Wrap(err, "Failed to build droplet release"))
+	}
+
+	err = runner.writeStagingInfoYML(releaseInfo.DefaultProcessTypes["web"], buildpackMetadata)
+	if err != nil {
+		return errors.Wrap(err, "unable to build staging info for the droplet")
 	}
 
 	tarPath, err := runner.findTar()
@@ -514,4 +515,23 @@ func (runner *Runner) findTar() (string, error) {
 		return "", err
 	}
 	return tarPath, nil
+}
+
+func (runner *Runner) writeStagingInfoYML(startCommand string, buildpacks []BuildpackMetadata) error {
+	stagingInfoYML := filepath.Join(runner.contentsDir, "staging_info.yml")
+	stagingInfoFile, err := os.Create(stagingInfoYML)
+	if err != nil {
+		return err
+	}
+	defer stagingInfoFile.Close()
+
+	// var lastBuildpack buildpackapplifecycle.BuildpackMetadata
+	// if len(buildpacks) > 0 {
+	lastBuildpack := buildpacks[len(buildpacks)-1]
+	// }
+
+	return json.NewEncoder(stagingInfoFile).Encode(StagingInfo{
+		DetectedBuildpack: lastBuildpack.Name,
+		StartCommand:      startCommand,
+	})
 }
