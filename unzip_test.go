@@ -19,11 +19,22 @@ var _ = Describe("Unzip function", func() {
 		srcZip    string
 		err       error
 		extractor Extractor
+		tmpDir    string
 	)
+
+	BeforeEach(func() {
+		tmpDir, err = ioutil.TempDir("", "example")
+		Expect(err).NotTo(HaveOccurred())
+		targetDir = filepath.Join(tmpDir, "testdata")
+	})
 
 	JustBeforeEach(func() {
 		extractor = &Unzipper{}
 		err = extractor.Extract(srcZip, targetDir)
+	})
+
+	AfterEach(func() {
+		os.RemoveAll(tmpDir)
 	})
 
 	Context("Unzip succeeds", func() {
@@ -50,12 +61,12 @@ var _ = Describe("Unzip function", func() {
 			Expect(ioErr).ToNot(HaveOccurred())
 		}
 
-		cleanUpFiles := func() {
+		AfterEach(func() {
 			for filePath := range fileContents {
 				rootDir := getRoot(filePath)
 				removeFile(rootDir)
 			}
-		}
+		})
 
 		assertFileContents := func(file string, expectedContent string) {
 			path := filepath.Join(targetDir, file)
@@ -100,11 +111,6 @@ var _ = Describe("Unzip function", func() {
 
 			BeforeEach(func() {
 				srcZip = "testdata/unzip_me.zip"
-				targetDir = "."
-			})
-
-			AfterEach(func() {
-				cleanUpFiles()
 			})
 
 			assertFilesUnzippedSuccessfully()
@@ -112,24 +118,16 @@ var _ = Describe("Unzip function", func() {
 
 		Context("When target directory is not empty string", func() {
 			BeforeEach(func() {
-				targetDir = "testdata/tmp"
-
-				ioErr := os.Mkdir(targetDir, 0750)
-				Expect(ioErr).ToNot(HaveOccurred())
+				Expect(os.Mkdir(targetDir, 0750)).To(Succeed())
 			})
 
 			AfterEach(func() {
-				ioErr := os.RemoveAll(targetDir)
-				Expect(ioErr).ToNot(HaveOccurred())
+				Expect(os.RemoveAll(targetDir)).To(Succeed())
 			})
 
 			Context("When the zip does not contain the directory files", func() {
 				BeforeEach(func() {
 					srcZip = "testdata/just_files.zip"
-				})
-
-				AfterEach(func() {
-					cleanUpFiles()
 				})
 
 				assertFilesUnzippedSuccessfully()
@@ -138,10 +136,6 @@ var _ = Describe("Unzip function", func() {
 			Context("When the zip contains the directory files", func() {
 				BeforeEach(func() {
 					srcZip = "testdata/unzip_me.zip"
-				})
-
-				AfterEach(func() {
-					cleanUpFiles()
 				})
 
 				assertFilesUnzippedSuccessfully()
@@ -159,7 +153,6 @@ var _ = Describe("Unzip function", func() {
 			})
 
 			It("should fail", func() {
-				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError(ContainSubstring("target directory cannot be empty")))
 			})
 		})
@@ -180,7 +173,6 @@ var _ = Describe("Unzip function", func() {
 		Context("When source zip archive does not exist", func() {
 
 			BeforeEach(func() {
-				targetDir = "testdata"
 				srcZip = "non-existent"
 			})
 
@@ -193,7 +185,6 @@ var _ = Describe("Unzip function", func() {
 		Context("When source is not a zip archive", func() {
 
 			BeforeEach(func() {
-				targetDir = "testdata"
 				srcZip = "testdata/file.notzip"
 			})
 

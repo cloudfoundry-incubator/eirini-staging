@@ -134,12 +134,16 @@ var _ = Describe("Responder", func() {
 			var (
 				resultsFilePath string
 				resultContents  string
-				buildpacks      []byte
 			)
+			BeforeEach(func() {
+				resultsFilePath = ""
+				resultContents = ""
+			})
 
 			Context("when preparing the response results", func() {
 				Context("when the results file is missing", func() {
 					It("should error with missing file msg", func() {
+						var buildpacks []byte
 						_, err := responder.PrepareSuccessResponse(resultsFilePath, string(buildpacks))
 						Expect(err).To(HaveOccurred())
 						Expect(err.Error()).To(ContainSubstring("failed to read result.json"))
