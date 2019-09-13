@@ -1,9 +1,11 @@
+ARG baseimage=cloudfoundry/cflinuxfs3
+
 FROM golang:1.12-stretch as builder
 WORKDIR /go/src/code.cloudfoundry.org/eirini-staging
 COPY . .
 RUN GO111MODULE=on GOOS=linux go build -mod vendor -a -o /uploader cmd/uploader/uploader.go
 
-FROM cloudfoundry/cflinuxfs3
+FROM ${baseimage}
 
 WORKDIR /workspace
 
