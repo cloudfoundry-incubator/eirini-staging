@@ -26,7 +26,7 @@ require (
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/lib/pq v1.0.0 // indirect
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d // indirect
-	github.com/onsi/ginkgo v1.8.0
+	github.com/onsi/ginkgo v1.10.1
 	github.com/onsi/gomega v1.5.0
 	github.com/pkg/errors v0.8.1
 	github.com/tedsuo/ifrit v0.0.0-20180802180643-bea94bb476cc // indirect
