@@ -143,11 +143,7 @@ func (runner *Runner) createCache(tarPath string) error {
 	}
 
 	err = exec.Command(tarPath, "-czf", runner.config.OutputBuildArtifactsCache, "-C", runner.config.BuildArtifactsCacheDir(), ".").Run()
-	if err != nil {
-		return errors.Wrap(err, "Failed to compress build artifacts")
-	}
-
-	return nil
+	return errors.Wrap(err, "Failed to compress build artifacts")
 }
 
 func (runner *Runner) buildpacksMetadata(buildpacks []string) []BuildpackMetadata {
