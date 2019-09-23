@@ -4,6 +4,7 @@ run:
     - vendor
     - recipe/packs
     - launcher/buildpackapplifecycle
+  modules-download-mode: vendor
 
 linters-settings:
   govet:
@@ -26,6 +27,7 @@ linters:
     - typecheck
     - goconst
     - dupl
+    - funlen
 
 issues:
   exclude-use-default: true
