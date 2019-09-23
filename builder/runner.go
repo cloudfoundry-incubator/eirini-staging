@@ -2,7 +2,6 @@ package builder
 
 import (
 	"bytes"
-	"crypto/md5"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -261,7 +260,7 @@ func (runner *Runner) pathHasBinDirectory(pathToTest string) bool {
 }
 
 func (runner *Runner) supplyCachePath(buildpack string) string {
-	return filepath.Join(runner.config.BuildArtifactsCacheDir(), fmt.Sprintf("%x", md5.Sum([]byte(buildpack))))
+	return BuildpackPath(runner.config.BuildArtifactsCacheDir(), buildpack)
 }
 
 func fileExists(file string) (bool, error) {
