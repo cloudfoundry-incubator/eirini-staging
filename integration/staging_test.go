@@ -222,7 +222,7 @@ var _ = Describe("StagingText", func() {
 				JustBeforeEach(func() {
 					cmd := exec.Command(binaries.DownloaderPath)
 					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-					Eventually(session).Should(gexec.Exit())
+					Eventually(session, 30).Should(gexec.Exit())
 				})
 
 				It("runs successfully", func() {
@@ -331,7 +331,7 @@ var _ = Describe("StagingText", func() {
 					cmd := exec.Command(binaries.DownloaderPath)
 					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 					Expect(err).ToNot(HaveOccurred())
-					Eventually(session).Should(gexec.Exit())
+					Eventually(session, 30).Should(gexec.Exit())
 				})
 
 				JustBeforeEach(func() {
@@ -442,7 +442,7 @@ var _ = Describe("StagingText", func() {
 					cmd := exec.Command(binaries.DownloaderPath)
 					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 					Expect(err).ToNot(HaveOccurred())
-					Eventually(session).Should(gexec.Exit())
+					Eventually(session, 30).Should(gexec.Exit())
 				})
 
 				JustBeforeEach(func() {
@@ -522,7 +522,7 @@ var _ = Describe("StagingText", func() {
 					cmd := exec.Command(binaries.DownloaderPath)
 					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 					Expect(err).ToNot(HaveOccurred())
-					Eventually(session).Should(gexec.Exit())
+					Eventually(session, 30).Should(gexec.Exit())
 				})
 
 				JustBeforeEach(func() {
@@ -610,7 +610,7 @@ var _ = Describe("StagingText", func() {
 						cmd := exec.Command(binaries.DownloaderPath)
 						session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 						Expect(err).NotTo(HaveOccurred())
-						Eventually(session).Should(gexec.Exit())
+						Eventually(session, 30).Should(gexec.Exit())
 					})
 
 					It("should fail with exit code 222", func() {
@@ -665,7 +665,7 @@ var _ = Describe("StagingText", func() {
 						cmd := exec.Command(binaries.DownloaderPath)
 						session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 						Expect(err).NotTo(HaveOccurred())
-						Eventually(session).Should(gexec.Exit())
+						Eventually(session, 30).Should(gexec.Exit())
 					})
 
 					It("should fail with exit code 223", func() {
@@ -726,7 +726,7 @@ var _ = Describe("StagingText", func() {
 
 						cmd := exec.Command(binaries.DownloaderPath)
 						session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-						Eventually(session).Should(gexec.Exit())
+						Eventually(session, 30).Should(gexec.Exit())
 						Expect(err).NotTo(HaveOccurred())
 					})
 
@@ -791,7 +791,7 @@ var _ = Describe("StagingText", func() {
 
 					cmd := exec.Command(binaries.DownloaderPath)
 					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-					Eventually(session).Should(gexec.Exit())
+					Eventually(session, 30).Should(gexec.Exit())
 					Expect(err).NotTo(HaveOccurred())
 
 				})
@@ -872,7 +872,7 @@ var _ = Describe("StagingText", func() {
 
 				cmd := exec.Command(binaries.DownloaderPath)
 				session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-				Eventually(session).Should(gexec.Exit())
+				Eventually(session, 30).Should(gexec.Exit())
 				Expect(err).NotTo(HaveOccurred())
 
 				cmd = exec.Command(binaries.ExecutorPath)
