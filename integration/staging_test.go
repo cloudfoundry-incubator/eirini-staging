@@ -935,7 +935,6 @@ var _ = Describe("StagingText", func() {
 
 func verifyResponse(failed bool, reason string) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-
 		body, err := ioutil.ReadAll(req.Body)
 		req.Body.Close()
 		Expect(err).ShouldNot(HaveOccurred())
@@ -952,7 +951,6 @@ func verifyResponse(failed bool, reason string) http.HandlerFunc {
 }
 
 func chownR(path, username, group string) error {
-
 	uid, gid, err := getIds(username, group)
 	if err != nil {
 		return err
@@ -967,7 +965,6 @@ func chownR(path, username, group string) error {
 }
 
 func getIds(username, group string) (uid int, gid int, err error) {
-
 	var g *user.Group
 	g, err = user.LookupGroup(group)
 	if err != nil {
