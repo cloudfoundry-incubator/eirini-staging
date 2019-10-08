@@ -45,7 +45,7 @@ func (r Responder) RespondWithFailure(failure error) {
 	cbResponse := r.createFailureResponse(failure, r.stagingGUID, r.completionCallback)
 
 	if completeErr := r.sendCompleteResponse(cbResponse); completeErr != nil {
-		fmt.Println("Error processsing completion callback:", completeErr.Error())
+		fmt.Println("Error processing completion callback:", completeErr.Error())
 	}
 }
 

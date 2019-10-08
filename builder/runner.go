@@ -47,7 +47,7 @@ func (runner *Runner) Run() error {
 		return errors.Wrap(err, "unable to clean cache dir")
 	}
 
-	log.Println("Detecting buildpack")
+	log.Println("Detecting buidlpack")
 	detectedBuildpackDir, buildpackMetadata, err := runner.supplyOrDetect()
 	if err != nil {
 		// detect buildpack returns custom error
