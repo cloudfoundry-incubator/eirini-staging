@@ -45,7 +45,7 @@ func (r Responder) RespondWithFailure(failure error) {
 	cbResponse := r.createFailureResponse(failure, r.stagingGUID, r.completionCallback)
 
 	if completeErr := r.sendCompleteResponse(cbResponse); completeErr != nil {
-		fmt.Println("Error processsing completion callback:", completeErr.Error())
+		fmt.Println("Error processing completion callback:", completeErr.Error())
 	}
 }
 
@@ -153,7 +153,7 @@ func (r Responder) sendCompleteResponse(response *models.TaskCallbackResponse) e
 		if err == nil {
 			message = string(body)
 		}
-		return fmt.Errorf("request not successful: uri=%s status=%d %s", uri, resp.StatusCode, message)
+		return fmt.Errorf("request not successful: status=%d taskGuid=%s %s", resp.StatusCode, response.TaskGuid, message)
 	}
 
 	return nil
