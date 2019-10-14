@@ -33,18 +33,17 @@ linters:
 issues:
   exclude-use-default: true
   exclude-rules:
-    - path: buildpack_manager.go
-      linters:
-      - gosec
     - path: integration/staging_test.go
       linters:
       - unparam
-    - path: _test\.go
+    - path: builder/runner.go
+      text: "G204: Subprocess launched with function call"
       linters:
         - gosec
     - path: _test\.go
       linters:
         - dupl
+        - gosec
   exclude:
     - should not be capitalized
   # Maximum issues count per one linter. Set to 0 to disable.
