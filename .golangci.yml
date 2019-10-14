@@ -1,5 +1,5 @@
 run:
-  deadline: 2m
+  timeout: 2m
   # which dirs to skip: they won't be analyzed;
   skip-dirs:
     - vendor
