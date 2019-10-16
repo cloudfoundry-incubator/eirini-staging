@@ -3,8 +3,6 @@ run:
   # which dirs to skip: they won't be analyzed;
   skip-dirs:
     - vendor
-    - recipe/packs
-    - launcher/buildpackapplifecycle
   modules-download-mode: vendor
 
 linters-settings:
@@ -29,9 +27,6 @@ linters:
 issues:
   exclude-use-default: true
   exclude-rules:
-    - path: integration/staging_test.go
-      linters:
-      - unparam
     - path: builder/runner.go
       text: "G204: Subprocess launched with function call"
       linters:
