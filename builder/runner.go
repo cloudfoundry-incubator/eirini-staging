@@ -389,7 +389,7 @@ func (runner *Runner) detect() (string, []BuildpackMetadata, error) {
 		}
 	}
 
-	return "", nil, DetectFailErr
+	return "", nil, DescriptiveError{ExitCode: DetectFailCode, Message: DetectFailMsg, InnerError: errors.New(FullDetectFailMsg)}
 }
 
 func (runner *Runner) readProcfile() (map[string]string, error) {

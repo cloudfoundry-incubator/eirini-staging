@@ -23,10 +23,6 @@ linters-settings:
 linters:
   enable-all: true
   disable:
-    - gochecknoglobals
-    - gochecknoinits
-    - typecheck
-    - goconst
     - funlen
     - wsl
 
@@ -44,6 +40,8 @@ issues:
       linters:
         - dupl
         - gosec
+        - gochecknoglobals
+        - goconst
   exclude:
     - should not be capitalized
   # Maximum issues count per one linter. Set to 0 to disable.

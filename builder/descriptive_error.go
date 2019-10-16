@@ -1,7 +1,6 @@
 package builder
 
 import (
-	"errors"
 	"fmt"
 )
 
@@ -37,8 +36,6 @@ func (e DescriptiveError) Error() string {
 	}
 	return fmt.Sprintf("%s: exit status %d - internal error: %s", e.Message, e.ExitCode, e.InnerError.Error())
 }
-
-var DetectFailErr = DescriptiveError{ExitCode: DetectFailCode, Message: DetectFailMsg, InnerError: errors.New(FullDetectFailMsg)}
 
 func NewCompileFailError(err error) error {
 	return DescriptiveError{Message: CompileFailMsg, ExitCode: CompileFailCode, InnerError: err}

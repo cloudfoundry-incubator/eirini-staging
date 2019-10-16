@@ -16,10 +16,6 @@ const (
 	ExitReason = "failed to create droplet"
 )
 
-var (
-	exitCode = 1
-)
-
 func main() {
 	log.Println("executor-started")
 	defer log.Println("executor-done")
@@ -68,7 +64,7 @@ func main() {
 	buildDir, err := extract(downloadDir)
 	if err != nil {
 		responder.RespondWithFailure(errors.Wrap(err, ExitReason))
-		os.Exit(exitCode)
+		os.Exit(1)
 	}
 	defer os.RemoveAll(buildDir)
 
@@ -81,7 +77,7 @@ func main() {
 	)
 	if err != nil {
 		responder.RespondWithFailure(errors.Wrap(err, ExitReason))
-		os.Exit(exitCode)
+		os.Exit(1)
 	}
 
 	err = execute(&buildConfig)
