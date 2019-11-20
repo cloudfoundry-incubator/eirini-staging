@@ -12,6 +12,12 @@ WORKDIR /workspace
 
 RUN mkdir -p /packs
 
+RUN mkdir -p /cache
+
+RUN chown -R vcap:vcap /cache /workspace
+
+USER vcap
+
 COPY --from=builder /executor /packs/
 
 ENTRYPOINT [ \
