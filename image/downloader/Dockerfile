@@ -12,6 +12,8 @@ WORKDIR /workspace
 
 RUN mkdir -p /packs
 
+USER vcap
+
 COPY --from=builder /downloader /packs/
 
 ENTRYPOINT [ \
