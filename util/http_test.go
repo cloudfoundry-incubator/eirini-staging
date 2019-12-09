@@ -5,6 +5,8 @@ import (
 	"crypto/x509"
 	"net/http"
 	"path"
+	"path/filepath"
+	"runtime"
 
 	"code.cloudfoundry.org/eirini-staging/util"
 
@@ -20,11 +22,15 @@ func extractSubject(key, cert string) []byte {
 	return c.RawSubject
 }
 
+var (
+	_, b, _, _ = runtime.Caller(0)
+	certPath   = path.Join(filepath.Dir(b), "..", "testdata", "certs")
+)
+
 var _ = Describe("HTTP", func() {
 	Context("CreateTLSHTTPClient", func() {
 		var (
 			systemCertSize int
-			certPath       = path.Join("testdata", "certs")
 			testSubject1   []byte
 			testSubject2   []byte
 		)
