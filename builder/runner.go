@@ -2,7 +2,6 @@ package builder
 
 import (
 	"bytes"
-	"crypto/md5"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -143,11 +142,7 @@ func (runner *Runner) createCache(tarPath string) error {
 	}
 
 	err = exec.Command(tarPath, "-czf", runner.config.OutputBuildArtifactsCache, "-C", runner.config.BuildArtifactsCacheDir(), ".").Run()
-	if err != nil {
-		return errors.Wrap(err, "Failed to compress build artifacts")
-	}
-
-	return nil
+	return errors.Wrap(err, "Failed to compress build artifacts")
 }
 
 func (runner *Runner) buildpacksMetadata(buildpacks []string) []BuildpackMetadata {
@@ -265,7 +260,7 @@ func (runner *Runner) pathHasBinDirectory(pathToTest string) bool {
 }
 
 func (runner *Runner) supplyCachePath(buildpack string) string {
-	return filepath.Join(runner.config.BuildArtifactsCacheDir(), fmt.Sprintf("%x", md5.Sum([]byte(buildpack))))
+	return BuildpackPath(runner.config.BuildArtifactsCacheDir(), buildpack)
 }
 
 func fileExists(file string) (bool, error) {
@@ -394,7 +389,7 @@ func (runner *Runner) detect() (string, []BuildpackMetadata, error) {
 		}
 	}
 
-	return "", nil, DetectFailErr
+	return "", nil, DescriptiveError{ExitCode: DetectFailCode, Message: DetectFailMsg, InnerError: errors.New(FullDetectFailMsg)}
 }
 
 func (runner *Runner) readProcfile() (map[string]string, error) {

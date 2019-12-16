@@ -35,11 +35,7 @@ func (d *PackageInstaller) Install() error {
 
 	downloadPath := filepath.Join(d.downloadDir, AppBits)
 	err := d.download(d.downloadURL, downloadPath)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return errors.Wrap(err, "download from "+d.downloadURL)
 }
 
 func (d *PackageInstaller) download(downloadURL string, filepath string) error {
@@ -51,12 +47,12 @@ func (d *PackageInstaller) download(downloadURL string, filepath string) error {
 
 	resp, err := d.client.Get(downloadURL)
 	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("failed to perform get request on: %s", downloadURL))
+		return errors.Wrapf(err, "failed to perform get request on: %s", downloadURL)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.New(fmt.Sprintf("download failed. status code %d", resp.StatusCode))
+		return fmt.Errorf("download failed. status code %d", resp.StatusCode)
 	}
 
 	_, err = io.Copy(file, resp.Body)

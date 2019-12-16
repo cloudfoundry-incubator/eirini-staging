@@ -90,7 +90,7 @@ var _ = Describe("StagingText", func() {
 		Expect(os.Setenv(eirinistaging.EnvWorkspaceDir, workspaceDir)).To(Succeed())
 		Expect(os.Setenv(eirinistaging.EnvOutputDropletLocation, path.Join(outputDir, "droplet.tgz"))).To(Succeed())
 		Expect(os.Setenv(eirinistaging.EnvOutputMetadataLocation, path.Join(outputDir, "result.json"))).To(Succeed())
-		Expect(os.Setenv("CF_STACK", "cflinuxfs2")).To(Succeed())
+		Expect(os.Setenv("CF_STACK", "cflinuxfs3")).To(Succeed())
 		Expect(os.Setenv(eirinistaging.EnvOutputBuildArtifactsCache, path.Join(cacheDir, "cache.tgz"))).To(Succeed())
 		Expect(os.Setenv(eirinistaging.EnvBuildpacksDir, buildpacksDir)).To(Succeed())
 		Expect(os.Setenv(eirinistaging.EnvStagingGUID, stagingGUID)).To(Succeed())
@@ -109,7 +109,7 @@ var _ = Describe("StagingText", func() {
 		Expect(os.RemoveAll(outputDir)).To(Succeed())
 		Expect(os.RemoveAll(cacheDir)).To(Succeed())
 
-		Expect(os.Unsetenv("cflinuxfs2")).To(Succeed())
+		Expect(os.Unsetenv("CF_STACK")).To(Succeed())
 		Expect(os.Unsetenv(eirinistaging.EnvCertsPath)).To(Succeed())
 		Expect(os.Unsetenv(eirinistaging.EnvStagingGUID)).To(Succeed())
 		Expect(os.Unsetenv(eirinistaging.EnvCompletionCallback)).To(Succeed())
@@ -183,7 +183,7 @@ var _ = Describe("StagingText", func() {
 					appbitBytes, err = ioutil.ReadFile("testdata/dora.zip")
 					Expect(err).NotTo(HaveOccurred())
 
-					buildpackBytes, err = ioutil.ReadFile("testdata/ruby-buildpack-cflinuxfs2-v1.7.35.zip")
+					buildpackBytes, err = ioutil.ReadFile("testdata/ruby-buildpack-cflinuxfs3-v1.8.0.zip")
 					Expect(err).NotTo(HaveOccurred())
 
 					server.AppendHandlers(
@@ -222,7 +222,7 @@ var _ = Describe("StagingText", func() {
 				JustBeforeEach(func() {
 					cmd := exec.Command(binaries.DownloaderPath)
 					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-					Eventually(session).Should(gexec.Exit())
+					Eventually(session, 30).Should(gexec.Exit())
 				})
 
 				It("runs successfully", func() {
@@ -288,7 +288,7 @@ var _ = Describe("StagingText", func() {
 					appbitBytes, err = ioutil.ReadFile("testdata/bad-dora.zip")
 					Expect(err).NotTo(HaveOccurred())
 
-					buildpackBytes, err = ioutil.ReadFile("testdata/ruby-buildpack-cflinuxfs2-v1.7.35.zip")
+					buildpackBytes, err = ioutil.ReadFile("testdata/ruby-buildpack-cflinuxfs3-v1.8.0.zip")
 					Expect(err).NotTo(HaveOccurred())
 					server.AppendHandlers(
 						ghttp.CombineHandlers(
@@ -331,7 +331,7 @@ var _ = Describe("StagingText", func() {
 					cmd := exec.Command(binaries.DownloaderPath)
 					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 					Expect(err).ToNot(HaveOccurred())
-					Eventually(session).Should(gexec.Exit())
+					Eventually(session, 30).Should(gexec.Exit())
 				})
 
 				JustBeforeEach(func() {
@@ -405,7 +405,7 @@ var _ = Describe("StagingText", func() {
 					appbitBytes, err = ioutil.ReadFile("testdata/dora.zip")
 					Expect(err).NotTo(HaveOccurred())
 
-					buildpackBytes, err = ioutil.ReadFile("testdata/ruby-buildpack-cflinuxfs2-v1.7.35.zip")
+					buildpackBytes, err = ioutil.ReadFile("testdata/ruby-buildpack-cflinuxfs3-v1.8.0.zip")
 					Expect(err).NotTo(HaveOccurred())
 					server.AppendHandlers(
 						ghttp.CombineHandlers(
@@ -442,7 +442,7 @@ var _ = Describe("StagingText", func() {
 					cmd := exec.Command(binaries.DownloaderPath)
 					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 					Expect(err).ToNot(HaveOccurred())
-					Eventually(session).Should(gexec.Exit())
+					Eventually(session, 30).Should(gexec.Exit())
 				})
 
 				JustBeforeEach(func() {
@@ -484,7 +484,7 @@ var _ = Describe("StagingText", func() {
 					appbitBytes, err = ioutil.ReadFile("testdata/logapp.zip")
 					Expect(err).NotTo(HaveOccurred())
 
-					buildpackBytes, err = ioutil.ReadFile("testdata/ruby-buildpack-cflinuxfs2-v1.7.35.zip")
+					buildpackBytes, err = ioutil.ReadFile("testdata/ruby-buildpack-cflinuxfs3-v1.8.0.zip")
 					Expect(err).NotTo(HaveOccurred())
 					server.AppendHandlers(
 						ghttp.CombineHandlers(
@@ -522,7 +522,7 @@ var _ = Describe("StagingText", func() {
 					cmd := exec.Command(binaries.DownloaderPath)
 					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 					Expect(err).ToNot(HaveOccurred())
-					Eventually(session).Should(gexec.Exit())
+					Eventually(session, 30).Should(gexec.Exit())
 				})
 
 				JustBeforeEach(func() {
@@ -610,7 +610,7 @@ var _ = Describe("StagingText", func() {
 						cmd := exec.Command(binaries.DownloaderPath)
 						session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 						Expect(err).NotTo(HaveOccurred())
-						Eventually(session).Should(gexec.Exit())
+						Eventually(session, 30).Should(gexec.Exit())
 					})
 
 					It("should fail with exit code 222", func() {
@@ -665,7 +665,7 @@ var _ = Describe("StagingText", func() {
 						cmd := exec.Command(binaries.DownloaderPath)
 						session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 						Expect(err).NotTo(HaveOccurred())
-						Eventually(session).Should(gexec.Exit())
+						Eventually(session, 30).Should(gexec.Exit())
 					})
 
 					It("should fail with exit code 223", func() {
@@ -726,7 +726,7 @@ var _ = Describe("StagingText", func() {
 
 						cmd := exec.Command(binaries.DownloaderPath)
 						session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-						Eventually(session).Should(gexec.Exit())
+						Eventually(session, 30).Should(gexec.Exit())
 						Expect(err).NotTo(HaveOccurred())
 					})
 
@@ -754,7 +754,7 @@ var _ = Describe("StagingText", func() {
 					appbitBytes, err = ioutil.ReadFile("testdata/catnip.zip")
 					Expect(err).NotTo(HaveOccurred())
 
-					buildpackBytes, err = ioutil.ReadFile("testdata/binary-buildpack-cflinuxfs2-v1.0.32.zip")
+					buildpackBytes, err = ioutil.ReadFile("testdata/binary-buildpack-cflinuxfs3-v1.0.34.zip")
 					Expect(err).NotTo(HaveOccurred())
 					server.AppendHandlers(
 						ghttp.CombineHandlers(
@@ -791,7 +791,7 @@ var _ = Describe("StagingText", func() {
 
 					cmd := exec.Command(binaries.DownloaderPath)
 					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-					Eventually(session).Should(gexec.Exit())
+					Eventually(session, 30).Should(gexec.Exit())
 					Expect(err).NotTo(HaveOccurred())
 
 				})
@@ -816,7 +816,7 @@ var _ = Describe("StagingText", func() {
 				appbitBytes, err = ioutil.ReadFile("testdata/dora.zip")
 				Expect(err).NotTo(HaveOccurred())
 
-				buildpackBytes, err = ioutil.ReadFile("testdata/ruby-buildpack-cflinuxfs2-v1.7.35.zip")
+				buildpackBytes, err = ioutil.ReadFile("testdata/ruby-buildpack-cflinuxfs3-v1.8.0.zip")
 				Expect(err).NotTo(HaveOccurred())
 
 				server.AppendHandlers(
@@ -872,7 +872,7 @@ var _ = Describe("StagingText", func() {
 
 				cmd := exec.Command(binaries.DownloaderPath)
 				session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-				Eventually(session).Should(gexec.Exit())
+				Eventually(session, 30).Should(gexec.Exit())
 				Expect(err).NotTo(HaveOccurred())
 
 				cmd = exec.Command(binaries.ExecutorPath)
@@ -935,7 +935,6 @@ var _ = Describe("StagingText", func() {
 
 func verifyResponse(failed bool, reason string) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-
 		body, err := ioutil.ReadAll(req.Body)
 		req.Body.Close()
 		Expect(err).ShouldNot(HaveOccurred())
@@ -952,7 +951,6 @@ func verifyResponse(failed bool, reason string) http.HandlerFunc {
 }
 
 func chownR(path, username, group string) error {
-
 	uid, gid, err := getIds(username, group)
 	if err != nil {
 		return err
@@ -967,7 +965,6 @@ func chownR(path, username, group string) error {
 }
 
 func getIds(username, group string) (uid int, gid int, err error) {
-
 	var g *user.Group
 	g, err = user.LookupGroup(group)
 	if err != nil {

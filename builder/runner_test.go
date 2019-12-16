@@ -71,6 +71,8 @@ var _ = Describe("Building", func() {
 		outputMetadata = outputMetadataFile.Name()
 		Expect(outputMetadataFile.Close()).To(Succeed())
 
+		buildpackOrder = ""
+
 		skipDetect = false
 		logOut = gbytes.NewBuffer()
 		log.SetOutput(logOut)
@@ -90,7 +92,7 @@ var _ = Describe("Building", func() {
 			OutputBuildArtifactsCache: outputBuildArtifactsCache,
 			OutputMetadataLocation:    outputMetadata,
 			BuildpackOrder:            strings.Split(buildpackOrder, ","),
-			BuildArtifactsCache:       "/tmp/cache",
+			BuildArtifactsCache:       filepath.Join(tmpDir, "cache"),
 			SkipDetect:                skipDetect,
 		}
 

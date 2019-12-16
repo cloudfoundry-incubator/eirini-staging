@@ -1,9 +1,9 @@
 run:
+  timeout: 2m
   # which dirs to skip: they won't be analyzed;
   skip-dirs:
     - vendor
-    - recipe/packs
-    - launcher/buildpackapplifecycle
+  modules-download-mode: vendor
 
 linters-settings:
   govet:
@@ -11,7 +11,7 @@ linters-settings:
     check-shadowing: true
   gocyclo:
     # minimal code complexity to report
-    min-complexity: 10
+    min-complexity: 20
   maligned:
     # print struct with more effective memory layout
     suggest-new: true
@@ -21,25 +21,24 @@ linters-settings:
 linters:
   enable-all: true
   disable:
-    - gochecknoglobals
-    - gochecknoinits
-    - typecheck
-    - goconst
-    - dupl
+    - funlen
+    - wsl
 
 issues:
   exclude-use-default: true
   exclude-rules:
-    - path: buildpack_manager.go
+    - path: builder/runner.go
+      text: "G204: Subprocess launched with function call"
       linters:
-      - gosec
-    - path: buildpackmanager_test.go
+        - gosec
+    - path: _test\.go
       linters:
-      - gosec
-    - path: integration/staging_test.go
-      linters:
-      - gosec
-      - unparam
+        - dupl
+        - gosec
+        - gochecknoglobals
+        - goconst
+  exclude:
+    - should not be capitalized
   # Maximum issues count per one linter. Set to 0 to disable.
   max-per-linter: 0
 

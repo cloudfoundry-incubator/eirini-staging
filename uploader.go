@@ -18,7 +18,6 @@ func (u *DropletUploader) Upload(
 	dropletUploadURL string,
 	dropletLocation string,
 ) error {
-
 	if dropletLocation == "" {
 		return errors.New("empty path parameter")
 	}

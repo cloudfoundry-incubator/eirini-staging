@@ -16,7 +16,7 @@ type Buildpack struct {
 	Name       string `json:"name"`
 	Key        string `json:"key"`
 	URL        string `json:"url"`
-	SkipDetect bool   `json:"skip_detect,omit_empty"`
+	SkipDetect bool   `json:"skip_detect,omitempty"`
 }
 
 type BuildpackMetadata struct {

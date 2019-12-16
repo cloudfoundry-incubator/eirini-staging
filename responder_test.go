@@ -204,7 +204,6 @@ var _ = Describe("Responder", func() {
 })
 
 func resultsFile(content string) string {
-
 	tmpfile, err := ioutil.TempFile("", "metadata_result")
 	Expect(err).ToNot(HaveOccurred())
 
