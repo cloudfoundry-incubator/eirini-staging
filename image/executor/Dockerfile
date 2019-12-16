@@ -1,6 +1,4 @@
 ARG baseimage=cloudfoundry/cflinuxfs3
-
-
 FROM golang:1.13-buster as builder
 WORKDIR /go/src/code.cloudfoundry.org/eirini-staging
 COPY . .
