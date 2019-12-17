@@ -148,7 +148,12 @@ func (r Responder) sendCompleteResponse(response *models.TaskCallbackResponse) e
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
-		return fmt.Errorf("request not successful: status=%d taskGuid=%s", resp.StatusCode, response.TaskGuid)
+		body, err := ioutil.ReadAll(resp.Body)
+		var message string
+		if err == nil {
+			message = string(body)
+		}
+		return fmt.Errorf("request not successful: status=%d taskGuid=%s %s", resp.StatusCode, response.TaskGuid, message)
 	}
 
 	return nil
