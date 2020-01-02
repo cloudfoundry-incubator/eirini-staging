@@ -71,8 +71,8 @@ func (s Config) SupplyBuildpacks() []string {
 }
 
 func (s Config) DepsIndex(i int) string {
-	numBuildpacks := len(s.SupplyBuildpacks()) + 1
-	padDigits := int(math.Log10(float64(numBuildpacks))) + 1
+	numBuildpacks := len(s.SupplyBuildpacks()) + 1           // nolint:gomnd
+	padDigits := int(math.Log10(float64(numBuildpacks))) + 1 // nolint:gomnd
 	indexFormat := fmt.Sprintf("%%0%dd", padDigits)
 	return fmt.Sprintf(indexFormat, i)
 }

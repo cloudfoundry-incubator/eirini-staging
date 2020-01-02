@@ -16,6 +16,10 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
+const (
+	executableMask = 0111
+)
+
 type Runner struct {
 	config       *Config
 	depsDir      string
@@ -243,7 +247,7 @@ func (runner *Runner) buildpackPath(buildpack string) (string, error) {
 		return "", errors.Wrapf(err, "Failed to read buildpack directory '%s' for buildpack '%s'", buildpackPath, buildpack)
 	}
 
-	if len(files) == 1 {
+	if len(files) == 1 { // nolint:gomnd
 		nestedPath := filepath.Join(buildpackPath, files[0].Name())
 
 		if runner.pathHasBinDirectory(nestedPath) {
@@ -497,7 +501,7 @@ func (runner *Runner) warnIfDetectNotExecutable(buildpackPath string) error {
 		return errors.Wrap(err, "failed to find detect script")
 	}
 
-	if fileInfo.Mode()&0111 != 0111 {
+	if fileInfo.Mode()&executableMask != executableMask {
 		log.Println("WARNING: buildpack script '/bin/detect' is not executable")
 	}
 

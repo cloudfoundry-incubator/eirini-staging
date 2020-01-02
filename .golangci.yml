@@ -37,6 +37,7 @@ issues:
         - gosec
         - gochecknoglobals
         - goconst
+        - gomnd
   exclude:
     - should not be capitalized
   # Maximum issues count per one linter. Set to 0 to disable.

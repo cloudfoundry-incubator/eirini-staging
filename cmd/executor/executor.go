@@ -64,7 +64,7 @@ func main() {
 	buildDir, err := extract(downloadDir)
 	if err != nil {
 		responder.RespondWithFailure(errors.Wrap(err, ExitReason))
-		os.Exit(1)
+		os.Exit(1) // nolint:gomnd
 	}
 	defer os.RemoveAll(buildDir)
 
@@ -77,7 +77,7 @@ func main() {
 	)
 	if err != nil {
 		responder.RespondWithFailure(errors.Wrap(err, ExitReason))
-		os.Exit(1)
+		os.Exit(1) // nolint:gomnd
 	}
 
 	err = execute(&buildConfig)

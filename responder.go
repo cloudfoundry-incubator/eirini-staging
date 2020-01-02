@@ -147,7 +147,7 @@ func (r Responder) sendCompleteResponse(response *models.TaskCallbackResponse) e
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode >= 400 {
+	if resp.StatusCode >= http.StatusBadRequest {
 		body, err := ioutil.ReadAll(resp.Body)
 		var message string
 		if err == nil {

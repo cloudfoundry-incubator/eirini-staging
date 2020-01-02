@@ -65,7 +65,7 @@ func (u *DropletUploader) do(req *http.Request) error {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode >= 400 {
+	if resp.StatusCode >= http.StatusBadRequest {
 		return fmt.Errorf("Upload failed: Status code %d", resp.StatusCode)
 	}
 	return nil
