@@ -19,6 +19,8 @@ const (
 	EnvOutputBuildArtifactsCache = "EIRINI_OUTPUT_BUILD_ARTIFACTS_CACHE"
 	EnvOutputMetadataLocation    = "EIRINI_OUTPUT_METADATA_LOCATION"
 	EnvBuildArtifactsCacheDir    = "EIRINI_BUILD_ARTIFACTS_CACHE_DIR"
+	EnvBuildpackCacheUploadURI   = "BUILDPACK_CACHE_UPLOAD_URI"
+	EnvBuildpackCacheDownloadURI = "BUILDPACK_CACHE_DOWNLOAD_URI"
 
 	RegisteredRoutes = "routes"
 

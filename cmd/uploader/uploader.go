@@ -33,6 +33,16 @@ func main() {
 		metadataLocation = eirinistaging.RecipeOutputMetadataLocation
 	}
 
+	buildpackCacheUploadURL, ok := os.LookupEnv(eirinistaging.EnvBuildpackCacheUploadURI)
+	if !ok {
+		panic("no buildpackCacheUploadURL set")
+	}
+
+	buildpackCacheLocation, ok := os.LookupEnv(eirinistaging.EnvOutputBuildArtifactsCache)
+	if !ok {
+		panic("no build artifacts cache env set")
+	}
+
 	responder, err := cmd.CreateResponder(certPath)
 	if err != nil {
 		log.Fatal("failed to initialize responder", err)
@@ -52,6 +62,12 @@ func main() {
 	if err != nil {
 		responder.RespondWithFailure(err)
 		log.Fatalf("failed to upload droplet: %s", err.Error())
+	}
+
+	err = uploadClient.Upload(buildpackCacheUploadURL, buildpackCacheLocation)
+	if err != nil {
+		responder.RespondWithFailure(err)
+		log.Fatalf("failed to upload buildpack cache. %s", err.Error())
 	}
 
 	resp, err := responder.PrepareSuccessResponse(metadataLocation, buildpacksConfig)

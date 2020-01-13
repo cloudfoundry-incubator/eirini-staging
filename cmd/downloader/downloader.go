@@ -33,6 +33,16 @@ func main() {
 		workspaceDir = eirinistaging.RecipeWorkspaceDir
 	}
 
+	buildpackCacheDir, ok := os.LookupEnv(eirinistaging.EnvBuildArtifactsCacheDir)
+	if !ok {
+		buildpackCacheDir = eirinistaging.BuildArtifactsCacheDir
+	}
+
+	buildpackCacheURI, ok := os.LookupEnv(eirinistaging.EnvBuildpackCacheDownloadURI)
+	if !ok {
+		panic("failed to lookup buildpack cache URI")
+	}
+
 	responder, err := cmd.CreateResponder(certPath)
 	if err != nil {
 		log.Fatal("failed to initialize responder", err)
@@ -46,11 +56,19 @@ func main() {
 	buildpackManager := eirinistaging.NewBuildpackManager(downloadClient, http.DefaultClient, buildpacksDir, buildpacksJSON)
 	packageInstaller := eirinistaging.NewPackageManager(downloadClient, appBitsDownloadURL, workspaceDir)
 
-	log.Println("Installing dependencies")
-	for _, installer := range []eirinistaging.Installer{
+	installers := []eirinistaging.Installer{
 		buildpackManager,
 		packageInstaller,
-	} {
+	}
+
+	if buildpackCacheURI != "" {
+		buildpackCacheInstaller := eirinistaging.NewPackageManager(downloadClient, buildpackCacheURI, buildpackCacheDir)
+
+		installers = append(installers, buildpackCacheInstaller)
+	}
+
+	log.Println("Installing dependencies")
+	for _, installer := range installers {
 		if err = installer.Install(); err != nil {
 			responder.RespondWithFailure(err)
 			log.Fatalf("error installing: %s", err.Error())
