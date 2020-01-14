@@ -145,7 +145,10 @@ func (runner *Runner) createCache(tarPath string) error {
 		return errors.Wrap(err, "Failed to create output build artifacts cache dir")
 	}
 
-	err = exec.Command(tarPath, "-czf", runner.config.OutputBuildArtifactsCache, "-C", runner.config.BuildArtifactsCacheDir(), ".").Run()
+	cmd := exec.Command(tarPath, "-czf", runner.config.OutputBuildArtifactsCache, "-C", runner.config.BuildArtifactsCacheDir(), ".")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err = cmd.Run()
 	return errors.Wrap(err, "Failed to compress build artifacts")
 }
 

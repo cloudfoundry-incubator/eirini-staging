@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	eirinistaging "code.cloudfoundry.org/eirini-staging"
@@ -14,6 +15,14 @@ import (
 func main() {
 	log.Println("downloader-started")
 	defer log.Println("downloader-done")
+
+	if err := os.MkdirAll("/buildpack/cache", 0755); err != nil {
+		panic("cannot create cache dir: " + err.Error())
+	}
+
+	if err := os.MkdirAll("/buildpack/tmp", 0755); err != nil {
+		panic("cannot create temp dir: " + err.Error())
+	}
 
 	appBitsDownloadURL := os.Getenv(eirinistaging.EnvDownloadURL)
 	buildpacksJSON := os.Getenv(eirinistaging.EnvBuildpacks)
@@ -72,6 +81,16 @@ func main() {
 		if err = installer.Install(); err != nil {
 			responder.RespondWithFailure(err)
 			log.Fatalf("error installing: %s", err.Error())
+		}
+	}
+
+	if buildpackCacheURI != "" {
+		cmd := exec.Command("/bin/tar", "-xzf", buildpackCacheDir+"/app.zip")
+		cmd.Dir = buildpackCacheDir
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			log.Fatalf("error unzipping: %s", err.Error())
 		}
 	}
 }
