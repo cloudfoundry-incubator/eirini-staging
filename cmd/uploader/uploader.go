@@ -40,7 +40,7 @@ func main() {
 
 	buildpackCacheLocation, ok := os.LookupEnv(eirinistaging.EnvOutputBuildArtifactsCache)
 	if !ok {
-		panic("no build artifacts cache env set")
+		buildpackCacheLocation = eirinistaging.RecipeOutputBuildArtifactsCache
 	}
 
 	responder, err := cmd.CreateResponder(certPath)

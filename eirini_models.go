@@ -32,9 +32,9 @@ const (
 	RecipeOutputName                = "staging-output"
 	RecipeOutputLocation            = "/out"
 	RecipeOutputDropletLocation     = "/out/droplet.tgz"
-	RecipeOutputBuildArtifactsCache = "/cache/cache.tgz"
+	RecipeOutputBuildArtifactsCache = "/buildpack-cache/cache.tgz"
 	RecipeOutputMetadataLocation    = "/out/result.json"
-	BuildArtifactsCacheDir          = "/tmp/cache"
+	BuildArtifactsCacheDir          = "/buildpack-cache"
 
 	CCUploaderInternalURL = "cc-uploader.service.cf.internal"
 
