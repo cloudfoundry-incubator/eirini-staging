@@ -31,6 +31,8 @@ code.cloudfoundry.org/runtimeschema v0.0.0-20180622184205-c38d8be9f68c h1:SmIVuw
 code.cloudfoundry.org/runtimeschema v0.0.0-20180622184205-c38d8be9f68c/go.mod h1:QSfnsqiGUdV3OOxqHxQkmUZwycGJNWYdredPgeGuGf4=
 code.cloudfoundry.org/tlsconfig v0.0.0-20190710180242-462f72de1106 h1:F36x++Jh2aWiBK++W9wI97SJuprnROicHiV0HtdSOzc=
 code.cloudfoundry.org/tlsconfig v0.0.0-20190710180242-462f72de1106/go.mod h1:VxNwgI63VxUGfSR/F3VzjOpnWLbeH+AB1pQugK1i1bA=
+code.cloudfoundry.org/tlsconfig v0.0.0-20200108215323-551ec42d1f74 h1:aLin7Z4YfLFnvz6Tn1ABosJdEk4KZDTWIbVb81PYVg0=
+code.cloudfoundry.org/tlsconfig v0.0.0-20200108215323-551ec42d1f74/go.mod h1:eTbFJpyXRGuFVyg5+oaj9B2eIbIc+0/kZjH8ftbtdew=
 code.cloudfoundry.org/urljoiner v0.0.0-20170223060717-5cabba6c0a50 h1:y+DtLO/eX/9NZjGGHntWs1bNG6uxdql8SqrHzu6VH3Q=
 code.cloudfoundry.org/urljoiner v0.0.0-20170223060717-5cabba6c0a50/go.mod h1:GyubIUn2eHGSlpIqJhGKBKicAe6CUV/pQJosfNEHdo4=
 github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
@@ -106,6 +108,7 @@ github.com/hashicorp/memberlist v0.1.3 h1:EmmoJme1matNzb+hMpDuR/0sbJSUisxyqBGG67
 github.com/hashicorp/memberlist v0.1.3/go.mod h1:ajVTdAv/9Im8oMAAj5G31PhhMCZJV2pPBoIllUwCN7I=
 github.com/hashicorp/serf v0.8.2 h1:YZ7UKsJv+hKjqGVUUbtE3HNj79Eln2oQ75tniF6iPt0=
 github.com/hashicorp/serf v0.8.2/go.mod h1:6hOLApaqBFA1NXqRQAsxw9QxuDEvNxSQRwA/JwenrHc=
+github.com/howeyc/gopass v0.0.0-20170109162249-bf9dde6d0d2c/go.mod h1:lADxMC39cJJqL93Duh1xhAs4I2Zs8mKS89XWXFGp9cs=
 github.com/hpcloud/tail v1.0.0 h1:nfCOvKYfkgYP8hkirhJocXT2+zOD8yUNjXaWfTlyFKI=
 github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=
 github.com/kisielk/errcheck v1.2.0/go.mod h1:/BMXB+zMLi60iA8Vv6Ksmxu/1UDYcXs4uQLJ+jE2L00=
@@ -156,6 +159,7 @@ github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529 h1:nn5Wsu0esKSJiIVhscUt
 github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529/go.mod h1:DxrIzT+xaE7yg65j358z/aeFdxmN0P9QXhEzd20vsDc=
 github.com/square/certstrap v1.1.2-0.20181030173000-b612375892a7 h1:AUbF3PNK5UAg9tPJHqcRN7nRkrRK/mRWqkiqlQRN9Fk=
 github.com/square/certstrap v1.1.2-0.20181030173000-b612375892a7/go.mod h1:1+xoDwJbjCv1e3erNygZ/sHwgq8dr8CgQB3M5mMI6ds=
+github.com/square/certstrap v1.2.0/go.mod h1:CUHqV+fxJW0Y5UQFnnbYwQ7bpKXO1AKbic9g73799yw=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
 github.com/stretchr/testify v1.3.0 h1:TivCn/peBQ7UY8ooIcPgZFpTNSz0Q2U6UrFlUfqbe0Q=
@@ -166,7 +170,9 @@ github.com/tedsuo/ifrit v0.0.0-20180802180643-bea94bb476cc h1:LUUe4cdABGrIJAhl1P
 github.com/tedsuo/ifrit v0.0.0-20180802180643-bea94bb476cc/go.mod h1:eyZnKCc955uh98WQvzOm0dgAeLnf2O0Rz0LPoC5ze+0=
 github.com/tedsuo/rata v1.0.0 h1:Sf9aZrYy6ElSTncjnGkyC2yuVvz5YJetBIUKJ4CmeKE=
 github.com/tedsuo/rata v1.0.0/go.mod h1:X47ELzhOoLbfFIY0Cql9P6yo3Cdwf2CMX3FVZxRzJPc=
+github.com/urfave/cli v1.21.0/go.mod h1:lxDj6qX9Q6lWQxIrbrT0nwecwUtRnhVZAJjJZrVUZZQ=
 golang.org/x/crypto v0.0.0-20181029021203-45a5f77698d3/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=
+golang.org/x/crypto v0.0.0-20181127143415-eb0de9b17e85/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2 h1:VklqNMn3ovrHsnt90PveolxSbWFaJdECFbxSq0Mqo2M=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20191122220453-ac88ee75c92c h1:/nJuwDLoL/zrqY6gf57vxC+Pi+pZ8bfhpPkicO5H7W4=
@@ -203,6 +209,7 @@ golang.org/x/sys v0.0.0-20180830151530-49385e6e1522/go.mod h1:STP8DvDyc/dI5b8T5h
 golang.org/x/sys v0.0.0-20180909124046-d0be0721c37e h1:o3PsSEY8E4eXWkXrIP9YJALUkVZqzHJT5DOasTyn8Vs=
 golang.org/x/sys v0.0.0-20180909124046-d0be0721c37e/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/sys v0.0.0-20181026203630-95b1ffbd15a5/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
+golang.org/x/sys v0.0.0-20181128092732-4ed8d59d0b35/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/sys v0.0.0-20190215142949-d0b11bdaac8a h1:1BGLXjeY4akVXGgbC9HugT3Jv3hCI0z56oJR5vAMgBU=
 golang.org/x/sys v0.0.0-20190215142949-d0b11bdaac8a/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/sys v0.0.0-20190412213103-97732733099d/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=

@@ -30,15 +30,15 @@ var (
 var _ = Describe("HTTP", func() {
 	Context("CreateTLSHTTPClient", func() {
 		var (
-			systemCertSize int
-			testSubject1   []byte
-			testSubject2   []byte
+			systemCerts  [][]byte
+			testSubject1 []byte
+			testSubject2 []byte
 		)
 
 		BeforeEach(func() {
 			systemCertPool, err := x509.SystemCertPool()
 			Expect(err).NotTo(HaveOccurred())
-			systemCertSize = len(systemCertPool.Subjects())
+			systemCerts = systemCertPool.Subjects()
 			testSubject1 = extractSubject(path.Join(certPath, "1.cert"), path.Join(certPath, "1.key"))
 			testSubject2 = extractSubject(path.Join(certPath, "2.cert"), path.Join(certPath, "2.key"))
 		})
@@ -49,7 +49,9 @@ var _ = Describe("HTTP", func() {
 
 			config := client.Transport.(*http.Transport).TLSClientConfig
 			Expect(config.RootCAs).NotTo(BeNil())
-			Expect(config.RootCAs.Subjects()).To(HaveLen(systemCertSize))
+			for _, systemCert := range systemCerts {
+				Expect(config.RootCAs.Subjects()).To(ContainElement(systemCert))
+			}
 		})
 
 		It("Should append certificates", func() {
@@ -63,6 +65,7 @@ var _ = Describe("HTTP", func() {
 			Expect(config.RootCAs).NotTo(BeNil())
 			Expect(config.RootCAs.Subjects()).To(ContainElement(testSubject2))
 			Expect(config.RootCAs.Subjects()).To(ContainElement(testSubject1))
+			Expect(config.RootCAs.Subjects()).To(HaveLen(len(systemCerts) + 2))
 		})
 	})
 })
