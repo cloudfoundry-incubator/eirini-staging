@@ -20,5 +20,5 @@ before_install:
 install: true
 
 script:
-    - make test
-    - make lint
+  - golangci-lint run
+  - ./scripts/test.sh
