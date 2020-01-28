@@ -45,12 +45,11 @@ func (s Config) init(buildpacksJSON string) (Config, error) {
 			return Config{}, err
 		}
 
-		if len(buildpacks) == 1 && buildpacks[0].SkipDetect {
+		if len(buildpacks) > 0 {
 			s.SkipDetect = true
-			s.BuildpackOrder = []string{buildpacks[0].Name}
-		} else if len(buildpacks) > 0 {
 			for _, b := range buildpacks {
 				s.BuildpackOrder = append(s.BuildpackOrder, b.Name)
+				s.SkipDetect = s.SkipDetect && b.SkipDetect
 			}
 		}
 	}
