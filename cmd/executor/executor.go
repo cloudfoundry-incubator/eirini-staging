@@ -68,14 +68,15 @@ func main() {
 	}
 	defer os.RemoveAll(buildDir)
 
-	buildConfig, err := builder.NewConfig(
-		buildDir, buildpacksDir,
-		outputDropletLocation,
-		outputBuildArtifactsCache,
-		outputMetadataLocation,
-		cacheDir, buildpackCfg,
-	)
-	if err != nil {
+	buildConfig := builder.Config{
+		BuildDir:                  buildDir,
+		BuildpacksDir:             buildpacksDir,
+		OutputDropletLocation:     outputDropletLocation,
+		OutputBuildArtifactsCache: outputBuildArtifactsCache,
+		OutputMetadataLocation:    outputMetadataLocation,
+		BuildArtifactsCache:       cacheDir,
+	}
+	if err = buildConfig.InitBuildpacks(buildpackCfg); err != nil {
 		responder.RespondWithFailure(errors.Wrap(err, ExitReason))
 		os.Exit(1) // nolint:gomnd
 	}
