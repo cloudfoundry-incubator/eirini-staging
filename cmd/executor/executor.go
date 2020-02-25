@@ -17,9 +17,6 @@ const (
 )
 
 func main() {
-	log.Println("executor-started")
-	defer log.Println("executor-done")
-
 	buildpackCfg := os.Getenv(eirinistaging.EnvBuildpacks)
 	buildpacksDir, ok := os.LookupEnv(eirinistaging.EnvBuildpacksDir)
 	if !ok {

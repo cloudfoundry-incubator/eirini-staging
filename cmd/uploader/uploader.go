@@ -12,9 +12,6 @@ import (
 )
 
 func main() {
-	log.Println("uploader-started")
-	defer log.Println("uploader-done")
-
 	buildpacksConfig := os.Getenv(eirinistaging.EnvBuildpacks)
 	dropletUploadURL := os.Getenv(eirinistaging.EnvDropletUploadURL)
 

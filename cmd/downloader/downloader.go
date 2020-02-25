@@ -12,9 +12,6 @@ import (
 )
 
 func main() {
-	log.Println("downloader-started")
-	defer log.Println("downloader-done")
-
 	appBitsDownloadURL := os.Getenv(eirinistaging.EnvDownloadURL)
 	buildpacksJSON := os.Getenv(eirinistaging.EnvBuildpacks)
 
