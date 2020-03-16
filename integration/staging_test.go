@@ -583,10 +583,10 @@ var _ = Describe("StagingText", func() {
 						archive_helpers.CreateZipArchive(buildpackPath, []archive_helpers.ArchiveFile{
 							{
 								Name: "bin/detect",
-								Body: fmt.Sprintf(`#!/bin/bash
+								Body: `#!/bin/bash
 
   exit 1
-`),
+`,
 							},
 						})
 					})
@@ -637,10 +637,10 @@ var _ = Describe("StagingText", func() {
 						archive_helpers.CreateZipArchive(buildpackPath, []archive_helpers.ArchiveFile{
 							{
 								Name: "bin/compile",
-								Body: fmt.Sprintf(`#!/bin/bash
+								Body: `#!/bin/bash
 
   exit 1
-`),
+`,
 							},
 						})
 					})
@@ -692,17 +692,17 @@ var _ = Describe("StagingText", func() {
 						archive_helpers.CreateZipArchive(buildpackPath, []archive_helpers.ArchiveFile{
 							{
 								Name: "bin/compile",
-								Body: fmt.Sprintf(`#!/bin/bash
+								Body: `#!/bin/bash
 
   exit 0
-`),
+`,
 							},
 							{
 								Name: "bin/release",
-								Body: fmt.Sprintf(`#!/bin/bash
+								Body: `#!/bin/bash
 
   exit 1
-`),
+`,
 							},
 						})
 					})

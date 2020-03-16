@@ -57,7 +57,7 @@ func (b *BuildpackManager) Install() error {
 
 	err := json.Unmarshal([]byte(b.buildpacksJSON), &buildpacks)
 	if err != nil {
-		fmt.Println(fmt.Sprintf("Error unmarshaling environment variable %s: %s", b.buildpacksJSON, err.Error()))
+		fmt.Printf("Error unmarshaling environment variable %s: %s\n", b.buildpacksJSON, err.Error())
 		return err
 	}
 
