@@ -1,9 +1,12 @@
 package main
 
 import (
+	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	eirinistaging "code.cloudfoundry.org/eirini-staging"
@@ -12,28 +15,34 @@ import (
 )
 
 func main() {
+	tmpDir := util.MustGetEnv("TMPDIR")
+	if err := os.MkdirAll(tmpDir, 0755); err != nil {
+		log.Fatalf("failed to create TMPDIR at %s: %s", tmpDir, err)
+	}
+
 	appBitsDownloadURL := os.Getenv(eirinistaging.EnvDownloadURL)
 	buildpacksJSON := os.Getenv(eirinistaging.EnvBuildpacks)
 
-	buildpacksDir, ok := os.LookupEnv(eirinistaging.EnvBuildpacksDir)
-	if !ok {
-		buildpacksDir = eirinistaging.RecipeBuildPacksDir
-	}
+	buildpacksDir := util.GetEnvOrDefault(eirinistaging.EnvBuildpacksDir, eirinistaging.RecipeBuildPacksDir)
+	certPath := util.GetEnvOrDefault(eirinistaging.EnvCertsPath, eirinistaging.CCCertsMountPath)
+	workspaceDir := util.GetEnvOrDefault(eirinistaging.EnvWorkspaceDir, eirinistaging.RecipeWorkspaceDir)
 
-	certPath, ok := os.LookupEnv(eirinistaging.EnvCertsPath)
-	if !ok {
-		certPath = eirinistaging.CCCertsMountPath
-	}
-
-	workspaceDir, ok := os.LookupEnv(eirinistaging.EnvWorkspaceDir)
-	if !ok {
-		workspaceDir = eirinistaging.RecipeWorkspaceDir
+	buildpackCacheDir := util.GetEnvOrDefault(eirinistaging.EnvBuildArtifactsCacheDir, eirinistaging.BuildArtifactsCacheDir)
+	if err := os.MkdirAll(buildpackCacheDir, 0755); err != nil {
+		log.Fatalf("failed to create buildpack cache dir at %s: %s", buildpackCacheDir, err)
 	}
 
 	responder, err := cmd.CreateResponder(certPath)
 	if err != nil {
 		log.Fatal("failed to initialize responder", err)
 	}
+
+	buildpackCacheURI, ok := os.LookupEnv(eirinistaging.EnvBuildpackCacheDownloadURI)
+	if !ok {
+		responder.RespondWithFailure(errors.New("buildpack-cache-download-uri-not-set"))
+		log.Fatal("buildpack cache download uri is not set")
+	}
+
 	downloadClient, err := createDownloadHTTPClient(certPath)
 	if err != nil {
 		responder.RespondWithFailure(err)
@@ -41,18 +50,45 @@ func main() {
 	}
 
 	buildpackManager := eirinistaging.NewBuildpackManager(downloadClient, http.DefaultClient, buildpacksDir, buildpacksJSON)
-	packageInstaller := eirinistaging.NewPackageManager(downloadClient, appBitsDownloadURL, workspaceDir)
+	appBitsInstaller := eirinistaging.NewPackageManager(downloadClient, appBitsDownloadURL, workspaceDir)
+	buildpackCacheInstaller := eirinistaging.NewPackageManager(downloadClient, buildpackCacheURI, buildpackCacheDir)
+
+	installers := []eirinistaging.Installer{
+		buildpackManager,
+		appBitsInstaller,
+	}
+	if buildpackCacheURI != "" {
+		installers = append(installers, buildpackCacheInstaller)
+	}
 
 	log.Println("Installing dependencies")
-	for _, installer := range []eirinistaging.Installer{
-		buildpackManager,
-		packageInstaller,
-	} {
+	for _, installer := range installers {
 		if err = installer.Install(); err != nil {
 			responder.RespondWithFailure(err)
 			log.Fatalf("error installing: %s", err.Error())
 		}
 	}
+
+	if buildpackCacheURI != "" {
+		if err := untarCache(buildpackCacheDir); err != nil {
+			log.Fatalf("error untarring cache: %s", err.Error())
+		}
+	}
+
+}
+
+func untarCache(buildpackCacheDir string) error {
+	tarPath, err := exec.LookPath("tar")
+	if err != nil {
+		return err
+	}
+
+	cacheZip := fmt.Sprintf("%s/app.zip", buildpackCacheDir)
+	cmd := exec.Command(tarPath, "-xzf", cacheZip)
+	cmd.Dir = buildpackCacheDir
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
 
 func createDownloadHTTPClient(certPath string) (*http.Client, error) {

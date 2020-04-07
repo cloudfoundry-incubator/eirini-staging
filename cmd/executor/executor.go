@@ -9,6 +9,7 @@ import (
 	eirinistaging "code.cloudfoundry.org/eirini-staging"
 	"code.cloudfoundry.org/eirini-staging/builder"
 	"code.cloudfoundry.org/eirini-staging/cmd"
+	"code.cloudfoundry.org/eirini-staging/util"
 	"github.com/pkg/errors"
 )
 
@@ -18,40 +19,13 @@ const (
 
 func main() {
 	buildpackCfg := os.Getenv(eirinistaging.EnvBuildpacks)
-	buildpacksDir, ok := os.LookupEnv(eirinistaging.EnvBuildpacksDir)
-	if !ok {
-		buildpacksDir = eirinistaging.RecipeBuildPacksDir
-	}
-
-	outputDropletLocation, ok := os.LookupEnv(eirinistaging.EnvOutputDropletLocation)
-	if !ok {
-		outputDropletLocation = eirinistaging.RecipeOutputDropletLocation
-	}
-
-	outputBuildArtifactsCache, ok := os.LookupEnv(eirinistaging.EnvOutputBuildArtifactsCache)
-	if !ok {
-		outputBuildArtifactsCache = eirinistaging.RecipeOutputBuildArtifactsCache
-	}
-
-	outputMetadataLocation, ok := os.LookupEnv(eirinistaging.EnvOutputMetadataLocation)
-	if !ok {
-		outputMetadataLocation = eirinistaging.RecipeOutputMetadataLocation
-	}
-
-	cacheDir, ok := os.LookupEnv(eirinistaging.EnvBuildArtifactsCacheDir)
-	if !ok {
-		cacheDir = eirinistaging.BuildArtifactsCacheDir
-	}
-
-	downloadDir, ok := os.LookupEnv(eirinistaging.EnvWorkspaceDir)
-	if !ok {
-		downloadDir = eirinistaging.RecipeWorkspaceDir
-	}
-
-	certPath, ok := os.LookupEnv(eirinistaging.EnvCertsPath)
-	if !ok {
-		certPath = eirinistaging.CCCertsMountPath
-	}
+	buildpacksDir := util.GetEnvOrDefault(eirinistaging.EnvBuildpacksDir, eirinistaging.RecipeBuildPacksDir)
+	outputDropletLocation := util.GetEnvOrDefault(eirinistaging.EnvOutputDropletLocation, eirinistaging.RecipeOutputDropletLocation)
+	outputBuildArtifactsCache := util.GetEnvOrDefault(eirinistaging.EnvOutputBuildArtifactsCache, eirinistaging.RecipeOutputBuildArtifactsCache)
+	outputMetadataLocation := util.GetEnvOrDefault(eirinistaging.EnvOutputMetadataLocation, eirinistaging.RecipeOutputMetadataLocation)
+	cacheDir := util.GetEnvOrDefault(eirinistaging.EnvBuildArtifactsCacheDir, eirinistaging.BuildArtifactsCacheDir)
+	downloadDir := util.GetEnvOrDefault(eirinistaging.EnvWorkspaceDir, eirinistaging.RecipeWorkspaceDir)
+	certPath := util.GetEnvOrDefault(eirinistaging.EnvCertsPath, eirinistaging.CCCertsMountPath)
 
 	responder, err := cmd.CreateResponder(certPath)
 	if err != nil {

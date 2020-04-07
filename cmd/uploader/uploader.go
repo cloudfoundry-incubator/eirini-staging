@@ -14,21 +14,11 @@ import (
 func main() {
 	buildpacksConfig := os.Getenv(eirinistaging.EnvBuildpacks)
 	dropletUploadURL := os.Getenv(eirinistaging.EnvDropletUploadURL)
-
-	certPath, ok := os.LookupEnv(eirinistaging.EnvCertsPath)
-	if !ok {
-		certPath = eirinistaging.CCCertsMountPath
-	}
-
-	dropletLocation, ok := os.LookupEnv(eirinistaging.EnvOutputDropletLocation)
-	if !ok {
-		dropletLocation = eirinistaging.RecipeOutputDropletLocation
-	}
-
-	metadataLocation, ok := os.LookupEnv(eirinistaging.EnvOutputMetadataLocation)
-	if !ok {
-		metadataLocation = eirinistaging.RecipeOutputMetadataLocation
-	}
+	certPath := util.GetEnvOrDefault(eirinistaging.EnvCertsPath, eirinistaging.CCCertsMountPath)
+	dropletLocation := util.GetEnvOrDefault(eirinistaging.EnvOutputDropletLocation, eirinistaging.RecipeOutputDropletLocation)
+	metadataLocation := util.GetEnvOrDefault(eirinistaging.EnvOutputMetadataLocation, eirinistaging.RecipeOutputMetadataLocation)
+	buildpackCacheLocation := util.GetEnvOrDefault(eirinistaging.EnvOutputBuildArtifactsCache, eirinistaging.RecipeOutputBuildArtifactsCache)
+	buildpackCacheUploadURL := util.MustGetEnv(eirinistaging.EnvBuildpackCacheUploadURI)
 
 	responder, err := cmd.CreateResponder(certPath)
 	if err != nil {
@@ -49,6 +39,14 @@ func main() {
 	if err != nil {
 		responder.RespondWithFailure(err)
 		log.Fatalf("failed to upload droplet: %s", err.Error())
+	}
+
+	if buildpackCacheUploadURL != "" {
+		err = uploadClient.Upload(buildpackCacheUploadURL, buildpackCacheLocation)
+		if err != nil {
+			responder.RespondWithFailure(err)
+			log.Fatalf("failed to upload buildpack cache. %s", err.Error())
+		}
 	}
 
 	resp, err := responder.PrepareSuccessResponse(metadataLocation, buildpacksConfig)

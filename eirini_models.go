@@ -19,6 +19,9 @@ const (
 	EnvOutputBuildArtifactsCache = "EIRINI_OUTPUT_BUILD_ARTIFACTS_CACHE"
 	EnvOutputMetadataLocation    = "EIRINI_OUTPUT_METADATA_LOCATION"
 	EnvBuildArtifactsCacheDir    = "EIRINI_BUILD_ARTIFACTS_CACHE_DIR"
+	EnvBuildpackCacheUploadURI   = "BUILDPACK_CACHE_UPLOAD_URI"
+	EnvBuildpackCacheDownloadURI = "BUILDPACK_CACHE_DOWNLOAD_URI"
+	EnvBuildpackCacheChecksum    = "BUILDPACK_CACHE_CHECKSUM"
 
 	RegisteredRoutes = "routes"
 
@@ -30,9 +33,9 @@ const (
 	RecipeOutputName                = "staging-output"
 	RecipeOutputLocation            = "/out"
 	RecipeOutputDropletLocation     = "/out/droplet.tgz"
-	RecipeOutputBuildArtifactsCache = "/cache/cache.tgz"
+	RecipeOutputBuildArtifactsCache = "/buildpack-cache/cache.tgz"
 	RecipeOutputMetadataLocation    = "/out/result.json"
-	BuildArtifactsCacheDir          = "/tmp/cache"
+	BuildArtifactsCacheDir          = "/buildpack-cache/cache"
 
 	CCUploaderInternalURL = "cc-uploader.service.cf.internal"
 
@@ -46,7 +49,6 @@ const (
 	EiriniClientKey  = "eirini-client-crt-key"
 )
 
-//go:generate counterfeiter . Extractor
 type Extractor interface {
 	Extract(src, targetDir string) error
 }
