@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-ginkgo -mod=vendor -race -randomizeAllSpecs -randomizeSuites -r "$@" integration
+ginkgo -p --nodes=4 -mod=vendor -race -randomizeAllSpecs -randomizeSuites -r "$@" integration

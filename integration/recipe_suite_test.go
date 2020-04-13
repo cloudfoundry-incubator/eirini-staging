@@ -58,7 +58,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	Expect(err).NotTo(HaveOccurred())
 })
 
-var _ = AfterSuite(func() {
+var _ = SynchronizedAfterSuite(func() {}, func() {
 	err := os.RemoveAll(binaries.DownloaderPath)
 	Expect(err).NotTo(HaveOccurred())
 	err = os.RemoveAll(binaries.ExecutorPath)

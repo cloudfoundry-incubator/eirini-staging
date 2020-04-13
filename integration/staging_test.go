@@ -48,8 +48,6 @@ var _ = Describe("Staging Test", func() {
 		eiriniServer   *ghttp.Server
 		appbitBytes    []byte
 		buildpackBytes []byte
-		session        *gexec.Session
-		buildpacks     []builder.Buildpack
 		buildpacksDir  string
 		workspaceDir   string
 		outputDir      string
@@ -84,6 +82,36 @@ var _ = Describe("Staging Test", func() {
 		testServer.HTTPTestServer.TLS = tlsConf
 
 		return testServer
+	}
+
+	rubyBuildpack := func() builder.Buildpack {
+		return builder.Buildpack{
+			Name: "ruby_buildpack",
+			Key:  "ruby_buildpack",
+			URL:  "https://github.com/cloudfoundry/ruby-buildpack",
+		}
+	}
+
+	myBuildpack := func() builder.Buildpack {
+		return builder.Buildpack{
+			Name: "my_buildpack",
+			Key:  "my_buildpack",
+			URL:  urljoiner.Join(server.URL(), "/my-buildpack.zip"),
+		}
+	}
+
+	myBuildpackWithSkipDetect := func() builder.Buildpack {
+		mybp := myBuildpack()
+		mybp.SkipDetect = true
+		return mybp
+	}
+
+	badurlBuildpack := func() builder.Buildpack {
+		return builder.Buildpack{
+			Name: "badurl_buildpack",
+			Key:  "bardurl_buildpack",
+			URL:  "bad-url.zip",
+		}
 	}
 
 	BeforeEach(func() {
@@ -146,6 +174,8 @@ var _ = Describe("Staging Test", func() {
 	})
 
 	Describe("download", func() {
+		var downloaderSession *gexec.Session
+
 		Describe("buildpack as git repo", func() {
 			BeforeEach(func() {
 				appbitBytes, err = ioutil.ReadFile("testdata/dora.zip")
@@ -161,34 +191,22 @@ var _ = Describe("Staging Test", func() {
 				eiriniServer.HTTPTestServer.StartTLS()
 
 				Expect(os.Setenv(eirinistaging.EnvEiriniAddress, eiriniServer.URL())).To(Succeed())
-
 				Expect(os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))).To(Succeed())
-
-				buildpacks = []builder.Buildpack{
-					{
-						Name: "app_buildpack",
-						Key:  "app_buildpack",
-						URL:  "https://github.com/cloudfoundry/ruby-buildpack",
-					},
-				}
-				Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(buildpacks))).To(Succeed())
-
+				Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(rubyBuildpack()))).To(Succeed())
 				Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 			})
 
 			JustBeforeEach(func() {
-				cmd := exec.Command(binaries.DownloaderPath)
-				session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-				Eventually(session, 60).Should(gexec.Exit())
+				downloaderSession = runDownloader()
 			})
 
 			It("runs successfully", func() {
-				Expect(session.ExitCode()).To(BeZero())
+				Expect(downloaderSession.ExitCode()).To(BeZero())
 			})
 
 			Context("prints the staging log", func() {
 				It("should print the installation log", func() {
-					Expect(session.Err).To(gbytes.Say("Installing dependencies"))
+					Expect(downloaderSession.Err).To(gbytes.Say("Installing dependencies"))
 				})
 			})
 		})
@@ -215,29 +233,17 @@ var _ = Describe("Staging Test", func() {
 				eiriniServer.HTTPTestServer.StartTLS()
 
 				Expect(os.Setenv(eirinistaging.EnvEiriniAddress, eiriniServer.URL())).To(Succeed())
-
 				Expect(os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))).To(Succeed())
-
-				buildpacks = []builder.Buildpack{
-					{
-						Name: "app_buildpack",
-						Key:  "app_buildpack",
-						URL:  urljoiner.Join(server.URL(), "/my-buildpack.zip"),
-					},
-				}
-				Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(buildpacks))).To(Succeed())
-
+				Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(myBuildpack()))).To(Succeed())
 				Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 			})
 
 			JustBeforeEach(func() {
-				cmd := exec.Command(binaries.DownloaderPath)
-				session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-				Eventually(session, 30).Should(gexec.Exit())
+				downloaderSession = runDownloader()
 			})
 
 			It("runs successfully", func() {
-				Expect(session.ExitCode()).To(BeZero())
+				Expect(downloaderSession.ExitCode()).To(BeZero())
 			})
 
 			It("installs the buildpack json", func() {
@@ -246,7 +252,7 @@ var _ = Describe("Staging Test", func() {
 			})
 
 			It("installs the buildpack", func() {
-				md5Hash := fmt.Sprintf("%x", md5.Sum([]byte("app_buildpack")))
+				md5Hash := fmt.Sprintf("%x", md5.Sum([]byte("my_buildpack")))
 				expectedBuildpackPath := path.Join(buildpacksDir, md5Hash)
 				Expect(expectedBuildpackPath).To(BeADirectory())
 			})
@@ -261,14 +267,7 @@ var _ = Describe("Staging Test", func() {
 
 			Context("fails", func() {
 				BeforeEach(func() {
-					buildpacks = []builder.Buildpack{
-						{
-							Name: "app_buildpack",
-							Key:  "app_buildpack",
-							URL:  "bad-url.zip",
-						},
-					}
-					Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(buildpacks))).To(Succeed())
+					Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(badurlBuildpack()))).To(Succeed())
 
 					eiriniServer.AppendHandlers(
 						ghttp.CombineHandlers(
@@ -283,7 +282,7 @@ var _ = Describe("Staging Test", func() {
 				})
 
 				It("should exit with non-zero exit code", func() {
-					Expect(session.ExitCode()).NotTo(BeZero())
+					Expect(downloaderSession.ExitCode()).NotTo(BeZero())
 				})
 			})
 		})
@@ -312,31 +311,20 @@ var _ = Describe("Staging Test", func() {
 				Expect(os.Setenv(eirinistaging.EnvEiriniAddress, eiriniServer.URL())).To(Succeed())
 				Expect(os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))).To(Succeed())
 				Expect(os.Setenv(eirinistaging.EnvBuildpackCacheDownloadURI, urljoiner.Join(server.URL(), "my-buildpack-cache"))).To(Succeed())
+				Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(rubyBuildpack()))).To(Succeed())
+				Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
 				buildpackCacheChecksum := sha256ForBytes(buildpackCacheBytes)
 				Expect(os.Setenv(eirinistaging.EnvBuildpackCacheChecksum, buildpackCacheChecksum)).To(Succeed())
 				Expect(os.Setenv(eirinistaging.EnvBuildpackCacheChecksumAlgorithm, "sha256")).To(Succeed())
-
-				buildpacks = []builder.Buildpack{
-					{
-						Name: "app_buildpack",
-						Key:  "app_buildpack",
-						URL:  "https://github.com/cloudfoundry/ruby-buildpack",
-					},
-				}
-				Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(buildpacks))).To(Succeed())
-
-				Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 			})
 
 			JustBeforeEach(func() {
-				cmd := exec.Command(binaries.DownloaderPath)
-				session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-				Eventually(session, 60).Should(gexec.Exit())
+				downloaderSession = runDownloader()
 			})
 
 			It("runs successfully", func() {
-				Expect(session.ExitCode()).To(BeZero())
+				Expect(downloaderSession.ExitCode()).To(BeZero())
 			})
 
 			It("downloads the buildpack cache", func() {
@@ -365,7 +353,7 @@ var _ = Describe("Staging Test", func() {
 				})
 
 				It("should exit with non-zero exit code", func() {
-					Expect(session.ExitCode()).NotTo(BeZero())
+					Expect(downloaderSession.ExitCode()).NotTo(BeZero())
 				})
 			})
 
@@ -381,13 +369,15 @@ var _ = Describe("Staging Test", func() {
 				})
 
 				It("should exit with non-zero exit code", func() {
-					Expect(session.ExitCode()).NotTo(BeZero())
+					Expect(downloaderSession.ExitCode()).NotTo(BeZero())
 				})
 			})
 		})
 	})
 
 	Describe("execute", func() {
+		var executorSession *gexec.Session
+
 		Context("when extract fails", func() {
 			BeforeEach(func() {
 				appbitBytes, err = ioutil.ReadFile("testdata/bad-dora.zip")
@@ -415,34 +405,19 @@ var _ = Describe("Staging Test", func() {
 				eiriniServer.HTTPTestServer.StartTLS()
 
 				Expect(os.Setenv(eirinistaging.EnvEiriniAddress, eiriniServer.URL())).To(Succeed())
-
 				Expect(os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))).To(Succeed())
-
-				buildpacks = []builder.Buildpack{
-					{
-						Name: "ruby_buildpack",
-						Key:  "ruby_buildpack",
-						URL:  urljoiner.Join(server.URL(), "/my-buildpack.zip"),
-					},
-				}
-				Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(buildpacks))).To(Succeed())
-
+				Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(myBuildpack()))).To(Succeed())
 				Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
-				cmd := exec.Command(binaries.DownloaderPath)
-				session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-				Expect(err).ToNot(HaveOccurred())
-				Eventually(session, 30).Should(gexec.Exit())
+				runDownloader()
 			})
 
 			JustBeforeEach(func() {
-				cmd := exec.Command(binaries.ExecutorPath)
-				session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-				Eventually(session, 80).Should(gexec.Exit())
+				executorSession = runExecutor()
 			})
 
 			It("should send completion response with a failure", func() {
-				Expect(session.ExitCode()).NotTo(BeZero())
+				Expect(executorSession.ExitCode()).NotTo(BeZero())
 				Expect(eiriniServer.ReceivedRequests()).To(HaveLen(1))
 			})
 		})
@@ -462,35 +437,19 @@ var _ = Describe("Staging Test", func() {
 				eiriniServer.HTTPTestServer.StartTLS()
 
 				Expect(os.Setenv(eirinistaging.EnvEiriniAddress, eiriniServer.URL())).To(Succeed())
-
 				Expect(os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))).To(Succeed())
-
-				buildpacks = []builder.Buildpack{
-					{
-						Name: "app_buildpack",
-						Key:  "app_buildpack",
-						URL:  "https://github.com/cloudfoundry/ruby-buildpack",
-					},
-				}
-				Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(buildpacks))).To(Succeed())
-
+				Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(rubyBuildpack()))).To(Succeed())
 				Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
-				cmd := exec.Command(binaries.DownloaderPath)
-				session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-				Eventually(session, 30).Should(gexec.Exit())
-				Expect(err).NotTo(HaveOccurred())
-
+				runDownloader()
 			})
 
 			JustBeforeEach(func() {
-				cmd := exec.Command(binaries.ExecutorPath)
-				session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-				Eventually(session, 600).Should(gexec.Exit())
+				executorSession = runExecutor()
 			})
 
 			It("should create the droplet and output metadata", func() {
-				Expect(session.ExitCode()).To(BeZero())
+				Expect(executorSession.ExitCode()).To(BeZero())
 
 				Expect(path.Join(outputDir, "droplet.tgz")).To(BeARegularFile())
 				Expect(path.Join(outputDir, "result.json")).To(BeARegularFile())
@@ -518,34 +477,19 @@ var _ = Describe("Staging Test", func() {
 				eiriniServer.HTTPTestServer.StartTLS()
 
 				Expect(os.Setenv(eirinistaging.EnvEiriniAddress, eiriniServer.URL())).To(Succeed())
-
 				Expect(os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))).To(Succeed())
-
-				buildpacks = []builder.Buildpack{
-					{
-						Name: "ruby_buildpack",
-						Key:  "ruby_buildpack",
-						URL:  urljoiner.Join(server.URL(), "/my-buildpack.zip"),
-					},
-				}
-				Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(buildpacks))).To(Succeed())
-
+				Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(myBuildpack()))).To(Succeed())
 				Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
-				cmd := exec.Command(binaries.DownloaderPath)
-				session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-				Expect(err).ToNot(HaveOccurred())
-				Eventually(session, 30).Should(gexec.Exit())
+				runDownloader()
 			})
 
 			JustBeforeEach(func() {
-				cmd := exec.Command(binaries.ExecutorPath)
-				session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-				Eventually(session, 80).Should(gexec.Exit())
+				executorSession = runExecutor()
 			})
 
 			It("should create the droplet and output metadata", func() {
-				Expect(session.ExitCode()).To(BeZero())
+				Expect(executorSession.ExitCode()).To(BeZero())
 
 				Expect(path.Join(outputDir, "droplet.tgz")).To(BeARegularFile())
 				Expect(path.Join(outputDir, "result.json")).To(BeARegularFile())
@@ -567,7 +511,7 @@ var _ = Describe("Staging Test", func() {
 				})
 
 				It("should exit with non-zero exit code", func() {
-					Expect(session.ExitCode()).NotTo(BeZero())
+					Expect(executorSession.ExitCode()).NotTo(BeZero())
 				})
 			})
 		})
@@ -593,35 +537,19 @@ var _ = Describe("Staging Test", func() {
 				eiriniServer.HTTPTestServer.StartTLS()
 
 				Expect(os.Setenv(eirinistaging.EnvEiriniAddress, eiriniServer.URL())).To(Succeed())
-
 				Expect(os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))).To(Succeed())
-
-				buildpacks = []builder.Buildpack{
-					{
-						Name:       "ruby_buildpack",
-						Key:        "ruby_buildpack",
-						URL:        urljoiner.Join(server.URL(), "/my-buildpack.zip"),
-						SkipDetect: true,
-					},
-				}
-				Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(buildpacks))).To(Succeed())
-
+				Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(myBuildpackWithSkipDetect()))).To(Succeed())
 				Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
-				cmd := exec.Command(binaries.DownloaderPath)
-				session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-				Expect(err).ToNot(HaveOccurred())
-				Eventually(session, 30).Should(gexec.Exit())
+				runDownloader()
 			})
 
 			JustBeforeEach(func() {
-				cmd := exec.Command(binaries.ExecutorPath)
-				session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-				Eventually(session, 80).Should(gexec.Exit())
+				executorSession = runExecutor()
 			})
 
 			It("should create the droplet and output metadata", func() {
-				Expect(session.ExitCode()).To(BeZero())
+				Expect(executorSession.ExitCode()).To(BeZero())
 
 				Expect(path.Join(outputDir, "droplet.tgz")).To(BeARegularFile())
 				Expect(path.Join(outputDir, "result.json")).To(BeARegularFile())
@@ -654,9 +582,7 @@ var _ = Describe("Staging Test", func() {
 				eiriniServer.HTTPTestServer.StartTLS()
 
 				Expect(os.Setenv(eirinistaging.EnvEiriniAddress, eiriniServer.URL())).To(Succeed())
-
 				Expect(os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))).To(Succeed())
-
 			})
 
 			AfterEach(func() {
@@ -681,21 +607,10 @@ var _ = Describe("Staging Test", func() {
 				})
 
 				JustBeforeEach(func() {
-					buildpacks = []builder.Buildpack{
-						{
-							Name: "ruby_buildpack",
-							Key:  "ruby_buildpack",
-							URL:  urljoiner.Join(server.URL(), "/my-buildpack.zip"),
-						},
-					}
-					Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(buildpacks))).To(Succeed())
-
+					Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(myBuildpack()))).To(Succeed())
 					Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
-					cmd := exec.Command(binaries.DownloaderPath)
-					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-					Expect(err).NotTo(HaveOccurred())
-					Eventually(session, 30).Should(gexec.Exit())
+					runDownloader()
 				})
 
 				It("should fail with exit code 222", func() {
@@ -706,10 +621,7 @@ var _ = Describe("Staging Test", func() {
 						),
 					)
 
-					cmd := exec.Command(binaries.ExecutorPath)
-					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-					Eventually(session, 80).Should(gexec.Exit())
-					Expect(session.ExitCode()).To(Equal(builder.DetectFailCode))
+					Expect(runExecutor().ExitCode()).To(Equal(builder.DetectFailCode))
 				})
 			})
 
@@ -731,22 +643,11 @@ var _ = Describe("Staging Test", func() {
 				})
 
 				JustBeforeEach(func() {
-					buildpacks = []builder.Buildpack{
-						{
-							Name:       "ruby_buildpack",
-							Key:        "ruby_buildpack",
-							URL:        urljoiner.Join(server.URL(), "/my-buildpack.zip"),
-							SkipDetect: true,
-						},
-					}
-					Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(buildpacks))).To(Succeed())
+					Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(myBuildpackWithSkipDetect()))).To(Succeed())
 
 					Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
-					cmd := exec.Command(binaries.DownloaderPath)
-					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-					Expect(err).NotTo(HaveOccurred())
-					Eventually(session, 30).Should(gexec.Exit())
+					runDownloader()
 				})
 
 				It("should fail with exit code 223", func() {
@@ -757,10 +658,7 @@ var _ = Describe("Staging Test", func() {
 						),
 					)
 
-					cmd := exec.Command(binaries.ExecutorPath)
-					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-					Eventually(session, 80).Should(gexec.Exit())
-					Expect(session.ExitCode()).To(Equal(builder.CompileFailCode))
+					Expect(runExecutor().ExitCode()).To(Equal(builder.CompileFailCode))
 				})
 			})
 
@@ -789,22 +687,10 @@ var _ = Describe("Staging Test", func() {
 				})
 
 				JustBeforeEach(func() {
-					buildpacks = []builder.Buildpack{
-						{
-							Name:       "ruby_buildpack",
-							Key:        "ruby_buildpack",
-							URL:        urljoiner.Join(server.URL(), "/my-buildpack.zip"),
-							SkipDetect: true,
-						},
-					}
-					Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(buildpacks))).To(Succeed())
-
+					Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(myBuildpackWithSkipDetect()))).To(Succeed())
 					Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
-					cmd := exec.Command(binaries.DownloaderPath)
-					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-					Eventually(session, 30).Should(gexec.Exit())
-					Expect(err).NotTo(HaveOccurred())
+					runDownloader()
 				})
 
 				It("should fail with exit code 224", func() {
@@ -815,10 +701,7 @@ var _ = Describe("Staging Test", func() {
 						),
 					)
 
-					cmd := exec.Command(binaries.ExecutorPath)
-					session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-					Eventually(session, 80).Should(gexec.Exit())
-					Expect(session.ExitCode()).To(Equal(builder.ReleaseFailCode))
+					Expect(runExecutor().ExitCode()).To(Equal(builder.ReleaseFailCode))
 				})
 			})
 
@@ -826,6 +709,8 @@ var _ = Describe("Staging Test", func() {
 	})
 
 	Describe("binary buildpack", func() {
+		var executorSession *gexec.Session
+
 		Context("when extract succeeds", func() {
 			BeforeEach(func() {
 				appbitBytes, err = ioutil.ReadFile("testdata/catnip.zip")
@@ -847,36 +732,19 @@ var _ = Describe("Staging Test", func() {
 				eiriniServer.HTTPTestServer.StartTLS()
 
 				Expect(os.Setenv(eirinistaging.EnvEiriniAddress, eiriniServer.URL())).To(Succeed())
-
 				Expect(os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))).To(Succeed())
-
-				buildpacks = []builder.Buildpack{
-					{
-						Name:       "binary_buildpack",
-						Key:        "binary_buildpack",
-						URL:        urljoiner.Join(server.URL(), "/my-buildpack.zip"),
-						SkipDetect: true,
-					},
-				}
-				Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(buildpacks))).To(Succeed())
-
+				Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(myBuildpackWithSkipDetect()))).To(Succeed())
 				Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
-				cmd := exec.Command(binaries.DownloaderPath)
-				session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-				Eventually(session, 30).Should(gexec.Exit())
-				Expect(err).NotTo(HaveOccurred())
-
+				runDownloader()
 			})
 
 			JustBeforeEach(func() {
-				cmd := exec.Command(binaries.ExecutorPath)
-				session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-				Eventually(session, 80).Should(gexec.Exit())
+				executorSession = runExecutor()
 			})
 
 			It("should create the droplet and output metadata", func() {
-				Expect(session.ExitCode()).To(BeZero())
+				Expect(executorSession.ExitCode()).To(BeZero())
 
 				Expect(path.Join(outputDir, "droplet.tgz")).To(BeARegularFile())
 				Expect(path.Join(outputDir, "result.json")).To(BeARegularFile())
@@ -885,6 +753,8 @@ var _ = Describe("Staging Test", func() {
 	})
 
 	Describe("upload", func() {
+		var uploaderSession *gexec.Session
+
 		BeforeEach(func() {
 			appbitBytes, err = ioutil.ReadFile("testdata/dora.zip")
 			Expect(err).NotTo(HaveOccurred())
@@ -923,41 +793,22 @@ var _ = Describe("Staging Test", func() {
 			eiriniServer.HTTPTestServer.StartTLS()
 
 			Expect(os.Setenv(eirinistaging.EnvEiriniAddress, eiriniServer.URL())).To(Succeed())
-
-			Expect(os.Setenv(eirinistaging.EnvDropletUploadURL, urljoiner.Join(server.URL(), "my-droplet"))).To(Succeed())
-
 			Expect(os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))).To(Succeed())
-
-			buildpacks = []builder.Buildpack{
-				{
-					Name: "ruby_buildpack",
-					Key:  "ruby_buildpack",
-					URL:  urljoiner.Join(server.URL(), "/my-buildpack.zip"),
-				},
-			}
-			Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(buildpacks))).To(Succeed())
-
+			Expect(os.Setenv(eirinistaging.EnvDropletUploadURL, urljoiner.Join(server.URL(), "my-droplet"))).To(Succeed())
+			Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(myBuildpack()))).To(Succeed())
 			Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
-			cmd := exec.Command(binaries.DownloaderPath)
-			session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-			Eventually(session, 30).Should(gexec.Exit())
-			Expect(err).NotTo(HaveOccurred())
+			runDownloader()
 
-			cmd = exec.Command(binaries.ExecutorPath)
-			session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-			Eventually(session, 80).Should(gexec.Exit())
-			Expect(err).NotTo(HaveOccurred())
+			runExecutor()
 		})
 
 		JustBeforeEach(func() {
-			cmd := exec.Command(binaries.UploaderPath)
-			session, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-			Eventually(session, 10).Should(gexec.Exit())
+			uploaderSession = runUploader()
 		})
 
 		It("should successfully upload the droplet", func() {
-			Expect(session).To(gexec.Exit(0))
+			Expect(uploaderSession).To(gexec.Exit(0))
 		})
 
 		Context("fails", func() {
@@ -977,7 +828,7 @@ var _ = Describe("Staging Test", func() {
 			})
 
 			It("should return an error", func() {
-				Expect(session.ExitCode()).NotTo(BeZero())
+				Expect(uploaderSession.ExitCode()).NotTo(BeZero())
 			})
 		})
 
@@ -995,7 +846,7 @@ var _ = Describe("Staging Test", func() {
 				Expect(server.ReceivedRequests()).To(HaveLen(3))
 				Expect(eiriniServer.ReceivedRequests()).To(HaveLen(1))
 
-				Expect(session.ExitCode()).NotTo(BeZero())
+				Expect(uploaderSession.ExitCode()).NotTo(BeZero())
 			})
 		})
 
@@ -1023,7 +874,7 @@ var _ = Describe("Staging Test", func() {
 			})
 
 			It("succeeds", func() {
-				Expect(session).To(gexec.Exit(0))
+				Expect(uploaderSession).To(gexec.Exit(0))
 			})
 
 			It("uploads the buildpack cache", func() {
@@ -1096,8 +947,32 @@ func sha256ForBytes(b []byte) string {
 	return fmt.Sprintf("%x", checksum.Sum(nil))
 }
 
-func buildpacksJSON(buildpacks []builder.Buildpack) string {
+func buildpacksJSON(buildpacks ...builder.Buildpack) string {
 	bytes, err := json.Marshal(buildpacks)
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 	return string(bytes)
+}
+
+func runDownloader() *gexec.Session {
+	cmd := exec.Command(binaries.DownloaderPath)
+	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+	ExpectWithOffset(1, err).ToNot(HaveOccurred())
+	EventuallyWithOffset(1, session, 60).Should(gexec.Exit())
+	return session
+}
+
+func runExecutor() *gexec.Session {
+	cmd := exec.Command(binaries.ExecutorPath)
+	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+	ExpectWithOffset(1, err).ToNot(HaveOccurred())
+	EventuallyWithOffset(1, session, 600).Should(gexec.Exit())
+	return session
+}
+
+func runUploader() *gexec.Session {
+	cmd := exec.Command(binaries.UploaderPath)
+	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+	ExpectWithOffset(1, err).ToNot(HaveOccurred())
+	Eventually(session, 10).Should(gexec.Exit())
+	return session
 }
