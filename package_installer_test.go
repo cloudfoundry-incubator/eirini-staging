@@ -3,15 +3,19 @@ package eirinistaging_test
 import (
 	"archive/zip"
 	"bytes"
+	"io"
 	"io/ioutil"
 	"net/http"
 
 	. "code.cloudfoundry.org/eirini-staging"
+	eirinistagingfakes "code.cloudfoundry.org/eirini-staging/eirini-stagingfakes"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
 )
+
+//go:generate counterfeiter io.Reader
 
 var _ = Describe("PackageInstaller", func() {
 	var (
@@ -21,9 +25,11 @@ var _ = Describe("PackageInstaller", func() {
 		installer     Installer
 		server        *ghttp.Server
 		zippedPackage []byte
+		readerFrom    ReaderFrom
 	)
 
 	BeforeEach(func() {
+		readerFrom = nil
 		zippedPackage, err = makeZippedPackage()
 		Expect(err).ToNot(HaveOccurred())
 
@@ -41,7 +47,7 @@ var _ = Describe("PackageInstaller", func() {
 	})
 
 	JustBeforeEach(func() {
-		installer = NewPackageManager(&http.Client{}, downloadURL, downloadDir)
+		installer = NewPackageManager(&http.Client{}, downloadURL, downloadDir, readerFrom)
 		err = installer.Install()
 	})
 
@@ -115,6 +121,22 @@ var _ = Describe("PackageInstaller", func() {
 			It("should return the right error message", func() {
 				Expect(err).To(MatchError(ContainSubstring("failed to perform get request")))
 				Expect(err).To(MatchError(ContainSubstring(downloadURL)))
+			})
+		})
+
+		Context("when a custom response reader is used", func() {
+			var fakeReader *eirinistagingfakes.FakeReader
+
+			BeforeEach(func() {
+				fakeReader = new(eirinistagingfakes.FakeReader)
+				fakeReader.ReadReturns(0, io.EOF)
+				readerFrom = func(io.Reader) io.Reader {
+					return fakeReader
+				}
+			})
+
+			It("uses the custom reader", func() {
+				Expect(fakeReader.ReadCallCount()).To(Equal(1))
 			})
 		})
 	})

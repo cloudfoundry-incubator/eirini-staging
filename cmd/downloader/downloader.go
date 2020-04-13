@@ -1,8 +1,10 @@
 package main
 
 import (
-	"errors"
+	"crypto/sha256"
 	"fmt"
+	"hash"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -10,6 +12,7 @@ import (
 	"path/filepath"
 
 	eirinistaging "code.cloudfoundry.org/eirini-staging"
+	"code.cloudfoundry.org/eirini-staging/checksum"
 	"code.cloudfoundry.org/eirini-staging/cmd"
 	"code.cloudfoundry.org/eirini-staging/util"
 )
@@ -31,16 +34,11 @@ func main() {
 	if err := os.MkdirAll(buildpackCacheDir, 0755); err != nil {
 		log.Fatalf("failed to create buildpack cache dir at %s: %s", buildpackCacheDir, err)
 	}
+	buildpackCacheURI := util.MustGetEnv(eirinistaging.EnvBuildpackCacheDownloadURI)
 
 	responder, err := cmd.CreateResponder(certPath)
 	if err != nil {
 		log.Fatal("failed to initialize responder", err)
-	}
-
-	buildpackCacheURI, ok := os.LookupEnv(eirinistaging.EnvBuildpackCacheDownloadURI)
-	if !ok {
-		responder.RespondWithFailure(errors.New("buildpack-cache-download-uri-not-set"))
-		log.Fatal("buildpack cache download uri is not set")
 	}
 
 	downloadClient, err := createDownloadHTTPClient(certPath)
@@ -49,15 +47,15 @@ func main() {
 		log.Fatalf("error creating http client: %s", err.Error())
 	}
 
-	buildpackManager := eirinistaging.NewBuildpackManager(downloadClient, http.DefaultClient, buildpacksDir, buildpacksJSON)
-	appBitsInstaller := eirinistaging.NewPackageManager(downloadClient, appBitsDownloadURL, workspaceDir)
-	buildpackCacheInstaller := eirinistaging.NewPackageManager(downloadClient, buildpackCacheURI, buildpackCacheDir)
-
 	installers := []eirinistaging.Installer{
-		buildpackManager,
-		appBitsInstaller,
+		eirinistaging.NewBuildpackManager(downloadClient, http.DefaultClient, buildpacksDir, buildpacksJSON),
+		eirinistaging.NewPackageManager(downloadClient, appBitsDownloadURL, workspaceDir, nil),
 	}
+
 	if buildpackCacheURI != "" {
+		buildpackCacheChecksum := util.MustGetEnv(eirinistaging.EnvBuildpackCacheChecksum)
+		checksumVerificationAlgorithm := checksumAlgorithm(util.MustGetEnv(eirinistaging.EnvBuildpackCacheChecksumAlgorithm))
+		buildpackCacheInstaller := eirinistaging.NewPackageManager(downloadClient, buildpackCacheURI, buildpackCacheDir, verifyingReader(checksumVerificationAlgorithm, buildpackCacheChecksum))
 		installers = append(installers, buildpackCacheInstaller)
 	}
 
@@ -99,4 +97,19 @@ func createDownloadHTTPClient(certPath string) (*http.Client, error) {
 	return util.CreateTLSHTTPClient([]util.CertPaths{
 		{Crt: cert, Key: key, Ca: cacert},
 	})
+}
+
+func verifyingReader(hash hash.Hash, chksum string) func(io.Reader) io.Reader {
+	return func(reader io.Reader) io.Reader {
+		return checksum.NewVerifyingReader(reader, hash, chksum)
+	}
+}
+
+func checksumAlgorithm(algorithm string) hash.Hash {
+	if algorithm == "sha256" {
+		return sha256.New()
+	}
+
+	log.Fatalf("unsupported checksum verification algorithm: %q", algorithm)
+	return nil
 }

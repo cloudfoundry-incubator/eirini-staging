@@ -10,17 +10,26 @@ import (
 	"github.com/pkg/errors"
 )
 
+type ReaderFrom func(io.Reader) io.Reader
+
 type PackageInstaller struct {
 	client      *http.Client
 	downloadURL string
 	downloadDir string
+	readerFrom  ReaderFrom
 }
 
-func NewPackageManager(client *http.Client, downloadURL, downloadDir string) Installer {
+func NewPackageManager(
+	client *http.Client,
+	downloadURL,
+	downloadDir string,
+	readerFrom ReaderFrom) Installer {
+
 	return &PackageInstaller{
 		client:      client,
 		downloadURL: downloadURL,
 		downloadDir: downloadDir,
+		readerFrom:  readerFrom,
 	}
 }
 
@@ -55,7 +64,12 @@ func (d *PackageInstaller) download(downloadURL string, filepath string) error {
 		return fmt.Errorf("download failed. status code %d", resp.StatusCode)
 	}
 
-	_, err = io.Copy(file, resp.Body)
+	var responseReader io.Reader = resp.Body
+	if d.readerFrom != nil {
+		responseReader = d.readerFrom(resp.Body)
+	}
+
+	_, err = io.Copy(file, responseReader)
 	if err != nil {
 		return errors.Wrap(err, "failed to copy content to file")
 	}

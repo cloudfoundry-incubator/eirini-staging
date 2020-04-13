@@ -1,9 +1,12 @@
 package recipe_test
 
 import (
+	"bytes"
 	"crypto/md5"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -31,7 +34,7 @@ import (
 
 //go:generate counterfeiter net/http.HandlerFunc
 
-var _ = Describe("StagingText", func() {
+var _ = Describe("Staging Test", func() {
 
 	const (
 		stagingGUID        = "staging-guid"
@@ -52,7 +55,6 @@ var _ = Describe("StagingText", func() {
 		outputDir      string
 		cacheDir       string
 		certsPath      string
-		buildpackJSON  []byte
 		actualBytes    []byte
 		expectedBytes  []byte
 	)
@@ -104,6 +106,8 @@ var _ = Describe("StagingText", func() {
 		Expect(os.Setenv(eirinistaging.EnvCompletionCallback, completionCallback)).To(Succeed())
 		Expect(os.Setenv(eirinistaging.EnvBuildArtifactsCacheDir, path.Join(cacheDir, "cache"))).To(Succeed())
 		Expect(os.Setenv(eirinistaging.EnvBuildpackCacheDownloadURI, "")).To(Succeed())
+		Expect(os.Setenv(eirinistaging.EnvBuildpackCacheChecksum, "")).To(Succeed())
+		Expect(os.Setenv(eirinistaging.EnvBuildpackCacheChecksumAlgorithm, "")).To(Succeed())
 		Expect(os.Setenv(eirinistaging.EnvBuildpackCacheUploadURI, "")).To(Succeed())
 
 		certsPath, err = filepath.Abs("testdata/certs")
@@ -133,7 +137,9 @@ var _ = Describe("StagingText", func() {
 		Expect(os.Unsetenv(eirinistaging.EnvEiriniAddress)).To(Succeed())
 		Expect(os.Unsetenv(eirinistaging.EnvBuildArtifactsCacheDir)).To(Succeed())
 		Expect(os.Unsetenv(eirinistaging.EnvBuildpackCacheDownloadURI)).To(Succeed())
-		// Expect(os.Unsetenv("TMPDIR")).To(Succeed())
+		Expect(os.Unsetenv(eirinistaging.EnvBuildpackCacheChecksum)).To(Succeed())
+		Expect(os.Unsetenv(eirinistaging.EnvBuildpackCacheChecksumAlgorithm)).To(Succeed())
+		Expect(os.Unsetenv("TMPDIR")).To(Succeed())
 
 		server.Close()
 		eiriniServer.Close()
@@ -165,11 +171,7 @@ var _ = Describe("StagingText", func() {
 						URL:  "https://github.com/cloudfoundry/ruby-buildpack",
 					},
 				}
-
-				buildpackJSON, err = json.Marshal(buildpacks)
-				Expect(err).ToNot(HaveOccurred())
-
-				Expect(os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))).To(Succeed())
+				Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(buildpacks))).To(Succeed())
 
 				Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 			})
@@ -223,11 +225,7 @@ var _ = Describe("StagingText", func() {
 						URL:  urljoiner.Join(server.URL(), "/my-buildpack.zip"),
 					},
 				}
-
-				buildpackJSON, err = json.Marshal(buildpacks)
-				Expect(err).ToNot(HaveOccurred())
-
-				Expect(os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))).To(Succeed())
+				Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(buildpacks))).To(Succeed())
 
 				Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 			})
@@ -270,11 +268,7 @@ var _ = Describe("StagingText", func() {
 							URL:  "bad-url.zip",
 						},
 					}
-
-					buildpackJSON, err = json.Marshal(buildpacks)
-					Expect(err).ToNot(HaveOccurred())
-
-					Expect(os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))).To(Succeed())
+					Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(buildpacks))).To(Succeed())
 
 					eiriniServer.AppendHandlers(
 						ghttp.CombineHandlers(
@@ -289,7 +283,7 @@ var _ = Describe("StagingText", func() {
 				})
 
 				It("should exit with non-zero exit code", func() {
-					Expect(session.ExitCode).NotTo(BeZero())
+					Expect(session.ExitCode()).NotTo(BeZero())
 				})
 			})
 		})
@@ -316,10 +310,12 @@ var _ = Describe("StagingText", func() {
 				eiriniServer.HTTPTestServer.StartTLS()
 
 				Expect(os.Setenv(eirinistaging.EnvEiriniAddress, eiriniServer.URL())).To(Succeed())
-
 				Expect(os.Setenv(eirinistaging.EnvDownloadURL, urljoiner.Join(server.URL(), "my-app-bits"))).To(Succeed())
-
 				Expect(os.Setenv(eirinistaging.EnvBuildpackCacheDownloadURI, urljoiner.Join(server.URL(), "my-buildpack-cache"))).To(Succeed())
+
+				buildpackCacheChecksum := sha256ForBytes(buildpackCacheBytes)
+				Expect(os.Setenv(eirinistaging.EnvBuildpackCacheChecksum, buildpackCacheChecksum)).To(Succeed())
+				Expect(os.Setenv(eirinistaging.EnvBuildpackCacheChecksumAlgorithm, "sha256")).To(Succeed())
 
 				buildpacks = []builder.Buildpack{
 					{
@@ -328,11 +324,7 @@ var _ = Describe("StagingText", func() {
 						URL:  "https://github.com/cloudfoundry/ruby-buildpack",
 					},
 				}
-
-				buildpackJSON, err = json.Marshal(buildpacks)
-				Expect(err).ToNot(HaveOccurred())
-
-				Expect(os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))).To(Succeed())
+				Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(buildpacks))).To(Succeed())
 
 				Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 			})
@@ -359,6 +351,38 @@ var _ = Describe("StagingText", func() {
 			It("unpacks the cache", func() {
 				buildpackCacheFilePath := path.Join(os.Getenv(eirinistaging.EnvBuildArtifactsCacheDir), "buildpack-cache", "cache")
 				Expect(buildpackCacheFilePath).To(BeAnExistingFile())
+			})
+
+			Context("when the buildpack cache checksum cannot be verified", func() {
+				BeforeEach(func() {
+					Expect(os.Setenv(eirinistaging.EnvBuildpackCacheChecksum, "trololo")).To(Succeed())
+					eiriniServer.AppendHandlers(
+						ghttp.CombineHandlers(
+							ghttp.VerifyRequest("PUT", responseURL),
+							verifyResponse(true, "checksum verification failure"),
+						),
+					)
+				})
+
+				It("should exit with non-zero exit code", func() {
+					Expect(session.ExitCode()).NotTo(BeZero())
+				})
+			})
+
+			Context("when the buildpack cache checksum algorithm is not supported", func() {
+				BeforeEach(func() {
+					Expect(os.Setenv(eirinistaging.EnvBuildpackCacheChecksumAlgorithm, "lil-sha")).To(Succeed())
+					eiriniServer.AppendHandlers(
+						ghttp.CombineHandlers(
+							ghttp.VerifyRequest("PUT", responseURL),
+							verifyResponse(true, "algorithm"),
+						),
+					)
+				})
+
+				It("should exit with non-zero exit code", func() {
+					Expect(session.ExitCode()).NotTo(BeZero())
+				})
 			})
 		})
 	})
@@ -401,11 +425,7 @@ var _ = Describe("StagingText", func() {
 						URL:  urljoiner.Join(server.URL(), "/my-buildpack.zip"),
 					},
 				}
-
-				buildpackJSON, err = json.Marshal(buildpacks)
-				Expect(err).ToNot(HaveOccurred())
-
-				Expect(os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))).To(Succeed())
+				Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(buildpacks))).To(Succeed())
 
 				Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
@@ -422,7 +442,7 @@ var _ = Describe("StagingText", func() {
 			})
 
 			It("should send completion response with a failure", func() {
-				Expect(session.ExitCode).NotTo(BeZero())
+				Expect(session.ExitCode()).NotTo(BeZero())
 				Expect(eiriniServer.ReceivedRequests()).To(HaveLen(1))
 			})
 		})
@@ -452,11 +472,7 @@ var _ = Describe("StagingText", func() {
 						URL:  "https://github.com/cloudfoundry/ruby-buildpack",
 					},
 				}
-
-				buildpackJSON, err = json.Marshal(buildpacks)
-				Expect(err).ToNot(HaveOccurred())
-
-				Expect(os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))).To(Succeed())
+				Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(buildpacks))).To(Succeed())
 
 				Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
@@ -512,11 +528,7 @@ var _ = Describe("StagingText", func() {
 						URL:  urljoiner.Join(server.URL(), "/my-buildpack.zip"),
 					},
 				}
-
-				buildpackJSON, err = json.Marshal(buildpacks)
-				Expect(err).ToNot(HaveOccurred())
-
-				Expect(os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))).To(Succeed())
+				Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(buildpacks))).To(Succeed())
 
 				Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
@@ -555,7 +567,7 @@ var _ = Describe("StagingText", func() {
 				})
 
 				It("should exit with non-zero exit code", func() {
-					Expect(session.ExitCode).NotTo(BeZero())
+					Expect(session.ExitCode()).NotTo(BeZero())
 				})
 			})
 		})
@@ -592,11 +604,7 @@ var _ = Describe("StagingText", func() {
 						SkipDetect: true,
 					},
 				}
-
-				buildpackJSON, err = json.Marshal(buildpacks)
-				Expect(err).ToNot(HaveOccurred())
-
-				Expect(os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))).To(Succeed())
+				Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(buildpacks))).To(Succeed())
 
 				Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
@@ -680,11 +688,7 @@ var _ = Describe("StagingText", func() {
 							URL:  urljoiner.Join(server.URL(), "/my-buildpack.zip"),
 						},
 					}
-
-					buildpackJSON, err = json.Marshal(buildpacks)
-					Expect(err).ToNot(HaveOccurred())
-
-					Expect(os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))).To(Succeed())
+					Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(buildpacks))).To(Succeed())
 
 					Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
@@ -735,11 +739,7 @@ var _ = Describe("StagingText", func() {
 							SkipDetect: true,
 						},
 					}
-
-					buildpackJSON, err = json.Marshal(buildpacks)
-					Expect(err).ToNot(HaveOccurred())
-
-					Expect(os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))).To(Succeed())
+					Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(buildpacks))).To(Succeed())
 
 					Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
@@ -797,11 +797,7 @@ var _ = Describe("StagingText", func() {
 							SkipDetect: true,
 						},
 					}
-
-					buildpackJSON, err = json.Marshal(buildpacks)
-					Expect(err).ToNot(HaveOccurred())
-
-					Expect(os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))).To(Succeed())
+					Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(buildpacks))).To(Succeed())
 
 					Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
@@ -862,11 +858,7 @@ var _ = Describe("StagingText", func() {
 						SkipDetect: true,
 					},
 				}
-
-				buildpackJSON, err = json.Marshal(buildpacks)
-				Expect(err).ToNot(HaveOccurred())
-
-				Expect(os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))).To(Succeed())
+				Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(buildpacks))).To(Succeed())
 
 				Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
@@ -943,11 +935,7 @@ var _ = Describe("StagingText", func() {
 					URL:  urljoiner.Join(server.URL(), "/my-buildpack.zip"),
 				},
 			}
-
-			buildpackJSON, err = json.Marshal(buildpacks)
-			Expect(err).ToNot(HaveOccurred())
-
-			Expect(os.Setenv(eirinistaging.EnvBuildpacks, string(buildpackJSON))).To(Succeed())
+			Expect(os.Setenv(eirinistaging.EnvBuildpacks, buildpacksJSON(buildpacks))).To(Succeed())
 
 			Expect(os.Setenv(eirinistaging.EnvCertsPath, certsPath)).To(Succeed())
 
@@ -989,7 +977,7 @@ var _ = Describe("StagingText", func() {
 			})
 
 			It("should return an error", func() {
-				Expect(session.ExitCode).NotTo(BeZero())
+				Expect(session.ExitCode()).NotTo(BeZero())
 			})
 		})
 
@@ -1007,7 +995,7 @@ var _ = Describe("StagingText", func() {
 				Expect(server.ReceivedRequests()).To(HaveLen(3))
 				Expect(eiriniServer.ReceivedRequests()).To(HaveLen(1))
 
-				Expect(session.ExitCode).NotTo(BeZero())
+				Expect(session.ExitCode()).NotTo(BeZero())
 			})
 		})
 
@@ -1100,4 +1088,16 @@ func getIds(username, group string) (uid int, gid int, err error) {
 	}
 
 	return uid, gid, nil
+}
+
+func sha256ForBytes(b []byte) string {
+	checksum := sha256.New()
+	io.Copy(checksum, bytes.NewReader(b))
+	return fmt.Sprintf("%x", checksum.Sum(nil))
+}
+
+func buildpacksJSON(buildpacks []builder.Buildpack) string {
+	bytes, err := json.Marshal(buildpacks)
+	ExpectWithOffset(1, err).ToNot(HaveOccurred())
+	return string(bytes)
 }
