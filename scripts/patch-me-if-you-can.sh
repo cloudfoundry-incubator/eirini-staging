@@ -14,18 +14,18 @@ main() {
   check_flags "$@"
   shift 2
 
-  export VALUES_FILE="$HOME/workspace/eirini-private-config/environments/kube-clusters/$(current_cluster_name)/scf-config-values.yaml"
+  export VALUES_FILE="$HOME/workspace/eirini-private-config/environments/kube-clusters/$(current_cluster_name)/values.yaml"
   if [ "$#" == "0" ]; then
     echo "No components specified. Nothing to do."
     exit 0
   fi
 
-  local component
+  local component img_id
   for component in "$@"; do
     echo "--- Patching component $component ---"
     docker_build "$component"
-    docker_push "$component"
-    update_values_file "$component"
+    docker_push "$component" "$img_id"
+    update_values_file "$component" "$img_id"
   done
 
   helm_upgrade
@@ -59,25 +59,25 @@ check_flags() {
 }
 
 docker_build() {
+  local img_sha
   echo "Building docker image for $1"
   pushd "$EIRINI_STAGING_BASEDIR"
-    docker build . -f "$EIRINI_STAGING_BASEDIR/image/$component/Dockerfile" \
-      --build-arg GIT_SHA=big-sha \
-      --tag "eirini/recipe-$component:patch-me-if-you-can"
+    img_sha=$(docker build -q . -f "$EIRINI_STAGING_BASEDIR/image/$component/Dockerfile" --build-arg GIT_SHA=big-sha)
+    img_id=${img_sha#sha256:}
+    docker tag $img_sha "eirini/recipe-$1:$img_id"
   popd
 }
 
 docker_push() {
   echo "Pushing docker image for $1"
   pushd "$EIRINI_STAGING_BASEDIR"
-    docker push "eirini/recipe-$component:patch-me-if-you-can"
+  docker push "eirini/recipe-$1:$2"
   popd
 }
 
 update_values_file() {
   echo "Applying docker image of $1 to kubernetes cluster"
-  new_image_ref="$(docker images --format='{{.Digest}}' "eirini/recipe-$1" | grep sha)"
-  goml set --file $VALUES_FILE --prop "eirini.opi.staging.${1}_image_digest" --value "$new_image_ref"
+  goml set --file $VALUES_FILE --prop "eirini.opi.staging.${1}_image_tag" --value "$2"
 }
 
 helm_upgrade() {
