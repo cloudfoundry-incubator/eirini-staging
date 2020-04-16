@@ -72,7 +72,6 @@ func main() {
 			log.Fatalf("error untarring cache: %s", err.Error())
 		}
 	}
-
 }
 
 func untarCache(buildpackCacheDir string) error {

@@ -331,8 +331,8 @@ var _ = Describe("Staging Test", func() {
 				downloadedCacheFilePath := path.Join(os.Getenv(eirinistaging.EnvBuildArtifactsCacheDir), "app.zip")
 				Expect(downloadedCacheFilePath).To(BeAnExistingFile())
 
-				donwloadedCacheBytes, err := ioutil.ReadFile(downloadedCacheFilePath)
-				Expect(err).NotTo(HaveOccurred())
+				donwloadedCacheBytes, readErr := ioutil.ReadFile(downloadedCacheFilePath)
+				Expect(readErr).NotTo(HaveOccurred())
 				Expect(donwloadedCacheBytes).To(Equal(buildpackCacheBytes))
 			})
 
@@ -943,7 +943,8 @@ func getIds(username, group string) (uid int, gid int, err error) {
 
 func sha256ForBytes(b []byte) string {
 	checksum := sha256.New()
-	io.Copy(checksum, bytes.NewReader(b))
+	_, err := io.Copy(checksum, bytes.NewReader(b))
+	Expect(err).NotTo(HaveOccurred())
 	return fmt.Sprintf("%x", checksum.Sum(nil))
 }
 

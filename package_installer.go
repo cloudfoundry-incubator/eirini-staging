@@ -23,8 +23,8 @@ func NewPackageManager(
 	client *http.Client,
 	downloadURL,
 	downloadDir string,
-	readerFrom ReaderFrom) Installer {
-
+	readerFrom ReaderFrom,
+) Installer {
 	return &PackageInstaller{
 		client:      client,
 		downloadURL: downloadURL,

@@ -23,7 +23,8 @@ var _ = Describe("Verifying Reader", func() {
 
 	BeforeEach(func() {
 		loremIpsumChecksum := sha256.New()
-		loremIpsumChecksum.Write([]byte(loremIpsum))
+		_, err := loremIpsumChecksum.Write([]byte(loremIpsum))
+		Expect(err).NotTo(HaveOccurred())
 		checksum = fmt.Sprintf("%x", loremIpsumChecksum.Sum(nil))
 	})
 
