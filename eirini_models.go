@@ -23,6 +23,7 @@ const (
 	EnvBuildpackCacheDownloadURI       = "BUILDPACK_CACHE_DOWNLOAD_URI"
 	EnvBuildpackCacheChecksum          = "BUILDPACK_CACHE_CHECKSUM"
 	EnvBuildpackCacheChecksumAlgorithm = "BUILDPACK_CACHE_CHECKSUM_ALGORITHM"
+	EnvBuildpackCacheDir               = "BUILDPACK_CACHE_DIR"
 
 	RegisteredRoutes = "routes"
 

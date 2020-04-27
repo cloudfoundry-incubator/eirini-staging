@@ -115,10 +115,7 @@ var _ = Describe("Staging Test", func() {
 	}
 
 	BeforeEach(func() {
-		// Make sure to set the TMPDIR env *before* creating temp dirs:
-		// * TMPDIR is required to be set by the downloader (it would otherwise fail)
-		// * TMPDIR also affects where `createTempDir` creates its temp directory
-		Expect(os.Setenv("TMPDIR", os.TempDir())).To(Succeed())
+		Expect(os.Setenv(eirinistaging.EnvBuildpackCacheDir, os.TempDir())).To(Succeed())
 		workspaceDir = createTempDir()
 		outputDir = createTempDir()
 		cacheDir = createTempDir()
