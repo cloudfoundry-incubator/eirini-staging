@@ -1,0 +1,13 @@
+#!/bin/bash
+
+set -exuo pipefail
+
+if echo "$@" | grep -q "integration" ; then
+    WORKSPACE=$(pwd)
+
+    docker run -it --rm  \
+      -v "${WORKSPACE}:/eirinistaging" \
+      eirini/staging-integration /eirinistaging/scripts/integration-test.sh
+else
+    ginkgo -mod=vendor -race -p -randomizeAllSpecs -randomizeSuites -r -skipPackage integration "$@"
+fi
