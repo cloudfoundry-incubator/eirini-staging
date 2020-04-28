@@ -109,7 +109,7 @@ func (b *BuildpackManager) installFromArchive(buildpack builder.Buildpack, build
 		err = os.Remove(fileName)
 	}()
 
-	err = ioutil.WriteFile(fileName, bytes, 0777)
+	err = ioutil.WriteFile(fileName, bytes, 0644) //nolint:gosec
 	if err != nil {
 		return err
 	}
@@ -133,7 +133,7 @@ func (b *BuildpackManager) writeBuildpackJSON(buildpacks []builder.Buildpack) er
 		return err
 	}
 
-	err = ioutil.WriteFile(filepath.Join(b.buildpackDir, configFileName), bytes, 0644)
+	err = ioutil.WriteFile(filepath.Join(b.buildpackDir, configFileName), bytes, 0644) //nolint:gosec
 	if err != nil {
 		return err
 	}
