@@ -71,7 +71,8 @@ func execute(conf *builder.Config) error {
 }
 
 func extract(downloadDir string) (string, error) {
-	extractor := &eirinistaging.Unzipper{}
+	var tenGB int64 = 10 * 1024 * 1024 * 1024
+	extractor := &eirinistaging.Unzipper{UnzippedSizeLimit: tenGB}
 	buildDir, err := ioutil.TempDir("", "app-bits")
 	if err != nil {
 		return "", err

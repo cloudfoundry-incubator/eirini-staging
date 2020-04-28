@@ -3,12 +3,15 @@ package eirinistaging
 import (
 	"archive/zip"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 )
 
-type Unzipper struct{}
+type Unzipper struct {
+	UnzippedSizeLimit int64
+}
 
 func (u *Unzipper) Extract(src, targetDir string) error {
 	if targetDir == "" {
@@ -31,7 +34,7 @@ func (u *Unzipper) Extract(src, targetDir string) error {
 			continue
 		}
 
-		if err = extractFile(file, destPath); err != nil {
+		if err = u.extractFile(file, destPath); err != nil {
 			return err
 		}
 	}
@@ -39,7 +42,7 @@ func (u *Unzipper) Extract(src, targetDir string) error {
 	return err
 }
 
-func extractFile(src *zip.File, destPath string) error {
+func (u *Unzipper) extractFile(src *zip.File, destPath string) error {
 	parentDir := filepath.Dir(destPath)
 	if err := os.MkdirAll(parentDir, 0755); err != nil {
 		return err
@@ -57,8 +60,12 @@ func extractFile(src *zip.File, destPath string) error {
 	}
 	defer destFile.Close()
 
-	if _, err = io.Copy(destFile, reader); err != nil {
+	_, err = io.CopyN(destFile, reader, u.UnzippedSizeLimit)
+	if err != nil && err != io.EOF {
 		return err
+	}
+	if err == nil {
+		return fmt.Errorf("extracting zip stopped at %d limit", u.UnzippedSizeLimit)
 	}
 
 	return destFile.Chmod(src.Mode())

@@ -44,11 +44,13 @@ func OpenBuildpackURL(buildpackURL string, client *http.Client) ([]byte, error) 
 }
 
 func NewBuildpackManager(internalClient *http.Client, defaultClient *http.Client, buildpackDir, buildpacksJSON string) Installer {
+	var tenGB int64 = 10 * 1024 * 1024 * 1024
 	return &BuildpackManager{
 		internalClient: internalClient,
 		defaultClient:  defaultClient,
 		buildpackDir:   buildpackDir,
 		buildpacksJSON: buildpacksJSON,
+		unzipper:       Unzipper{UnzippedSizeLimit: tenGB},
 	}
 }
 

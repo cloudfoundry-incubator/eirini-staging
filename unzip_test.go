@@ -15,21 +15,23 @@ import (
 var _ = Describe("Unzip function", func() {
 
 	var (
-		targetDir string
-		srcZip    string
-		err       error
-		extractor Extractor
-		tmpDir    string
+		targetDir      string
+		srcZip         string
+		err            error
+		extractor      Extractor
+		tmpDir         string
+		unzipSizeLimit int64
 	)
 
 	BeforeEach(func() {
 		tmpDir, err = ioutil.TempDir("", "example")
 		Expect(err).NotTo(HaveOccurred())
 		targetDir = filepath.Join(tmpDir, "testdata")
+		unzipSizeLimit = 100000
 	})
 
 	JustBeforeEach(func() {
-		extractor = &Unzipper{}
+		extractor = &Unzipper{UnzippedSizeLimit: unzipSizeLimit}
 		err = extractor.Extract(srcZip, targetDir)
 	})
 
@@ -192,6 +194,17 @@ var _ = Describe("Unzip function", func() {
 				Expect(err).To(HaveOccurred())
 			})
 
+		})
+
+		Context("when the zip file extracts to more than the limit", func() {
+			BeforeEach(func() {
+				srcZip = "testdata/unzip_me.zip"
+				unzipSizeLimit = 10
+			})
+
+			It("should fail", func() {
+				Expect(err).To(MatchError(ContainSubstring("extracting zip stopped at")))
+			})
 		})
 	})
 
