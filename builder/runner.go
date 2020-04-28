@@ -335,36 +335,57 @@ func (runner *Runner) runFinalize(buildpackPath string) error {
 	}
 
 	if hasFinalize {
-		hasSupply, err := hasSupply(buildpackPath)
-		if err != nil {
-			return NewSupplyFailError(err)
-		}
-
-		if hasSupply {
-			if err := runner.run(exec.Command(filepath.Join(buildpackPath, "bin", "supply"), runner.config.BuildDir, cacheDir, runner.depsDir, depsIdx)); err != nil {
-				return NewSupplyFailError(err)
-			}
-		}
-
-		if err := runner.run(exec.Command(filepath.Join(buildpackPath, "bin", "finalize"), runner.config.BuildDir, cacheDir, runner.depsDir, depsIdx, runner.profileDir)); err != nil {
-			return NewFinalizeFailError(err)
+		if err = runner.handleFinalize(buildpackPath, cacheDir, depsIdx); err != nil {
+			return err
 		}
 	} else {
-		if len(runner.config.SupplyBuildpacks()) > 0 {
-			logError(MissingFinalizeWarnMsg)
-		}
-
-		// remove unused deps sub dir
-		if err := os.RemoveAll(filepath.Join(runner.depsDir, depsIdx)); err != nil {
-			return NewCompileFailError(err)
-		}
-
-		if err := runner.run(exec.Command(filepath.Join(buildpackPath, "bin", "compile"), runner.config.BuildDir, cacheDir)); err != nil {
-			logError(fmt.Sprintf("compile script failed %s", err.Error()))
-			return NewCompileFailError(errors.Wrap(err, "failed to compile droplet"))
+		if err = runner.handleNoFinalize(buildpackPath, cacheDir, depsIdx); err != nil {
+			return err
 		}
 	}
 
+	return nil
+}
+
+func (runner *Runner) handleFinalize(buildpackPath, cacheDir, depsIdx string) error {
+	if err := runner.handleSupply(buildpackPath, cacheDir, depsIdx); err != nil {
+		return err
+	}
+
+	if err := runner.run(exec.Command(filepath.Join(buildpackPath, "bin", "finalize"), runner.config.BuildDir, cacheDir, runner.depsDir, depsIdx, runner.profileDir)); err != nil {
+		return NewFinalizeFailError(err)
+	}
+	return nil
+}
+
+func (runner *Runner) handleNoFinalize(buildpackPath, cacheDir, depsIdx string) error {
+	if len(runner.config.SupplyBuildpacks()) > 0 {
+		logError(MissingFinalizeWarnMsg)
+	}
+
+	// remove unused deps sub dir
+	if err := os.RemoveAll(filepath.Join(runner.depsDir, depsIdx)); err != nil {
+		return NewCompileFailError(err)
+	}
+
+	if err := runner.run(exec.Command(filepath.Join(buildpackPath, "bin", "compile"), runner.config.BuildDir, cacheDir)); err != nil {
+		logError(fmt.Sprintf("compile script failed %s", err.Error()))
+		return NewCompileFailError(errors.Wrap(err, "failed to compile droplet"))
+	}
+	return nil
+}
+
+func (runner *Runner) handleSupply(buildpackPath, cacheDir, depsIdx string) error {
+	hasSupply, err := hasSupply(buildpackPath)
+	if err != nil {
+		return NewSupplyFailError(err)
+	}
+
+	if hasSupply {
+		if err := runner.run(exec.Command(filepath.Join(buildpackPath, "bin", "supply"), runner.config.BuildDir, cacheDir, runner.depsDir, depsIdx)); err != nil {
+			return NewSupplyFailError(err)
+		}
+	}
 	return nil
 }
 

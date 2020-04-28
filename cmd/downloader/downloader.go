@@ -49,10 +49,10 @@ func main() {
 
 	if buildpackCacheURI != "" {
 		tmpDir := util.MustGetEnv(eirinistaging.EnvBuildpackCacheDir)
-		if err := os.MkdirAll(tmpDir, 0755); err != nil {
+		if err = os.MkdirAll(tmpDir, 0755); err != nil {
 			log.Fatalf("failed to create tmpDir at %s: %s", tmpDir, err)
 		}
-		if err := os.Setenv("TMPDIR", tmpDir); err != nil {
+		if err = os.Setenv("TMPDIR", tmpDir); err != nil {
 			log.Fatalf("failed to set TMPDIR as %s: %s", tmpDir, err)
 		}
 
