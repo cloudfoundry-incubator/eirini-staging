@@ -115,7 +115,6 @@ var _ = Describe("Staging Test", func() {
 	}
 
 	BeforeEach(func() {
-		Expect(os.Setenv(eirinistaging.EnvBuildpackCacheDir, os.TempDir())).To(Succeed())
 		workspaceDir = createTempDir()
 		outputDir = createTempDir()
 		cacheDir = createTempDir()

@@ -17,7 +17,7 @@ func main() {
 	certPath := util.GetEnvOrDefault(eirinistaging.EnvCertsPath, eirinistaging.CCCertsMountPath)
 	dropletLocation := util.GetEnvOrDefault(eirinistaging.EnvOutputDropletLocation, eirinistaging.RecipeOutputDropletLocation)
 	metadataLocation := util.GetEnvOrDefault(eirinistaging.EnvOutputMetadataLocation, eirinistaging.RecipeOutputMetadataLocation)
-	buildpackCacheLocation := util.GetEnvOrDefault(eirinistaging.EnvOutputBuildArtifactsCache, eirinistaging.RecipeOutputBuildArtifactsCache)
+	buildpackCacheLocation := util.MustGetEnv(eirinistaging.EnvOutputBuildArtifactsCache)
 	buildpackCacheUploadURL := util.MustGetEnv(eirinistaging.EnvBuildpackCacheUploadURI)
 
 	responder, err := cmd.CreateResponder(certPath)

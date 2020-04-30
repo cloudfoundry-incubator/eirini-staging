@@ -25,7 +25,7 @@ func main() {
 	certPath := util.GetEnvOrDefault(eirinistaging.EnvCertsPath, eirinistaging.CCCertsMountPath)
 	workspaceDir := util.GetEnvOrDefault(eirinistaging.EnvWorkspaceDir, eirinistaging.RecipeWorkspaceDir)
 
-	buildpackCacheDir := util.GetEnvOrDefault(eirinistaging.EnvBuildArtifactsCacheDir, eirinistaging.BuildArtifactsCacheDir)
+	buildpackCacheDir := util.MustGetEnv(eirinistaging.EnvBuildArtifactsCacheDir)
 	if err := os.MkdirAll(buildpackCacheDir, 0755); err != nil {
 		log.Fatalf("failed to create buildpack cache dir at %s: %s", buildpackCacheDir, err)
 	}
@@ -48,14 +48,6 @@ func main() {
 	}
 
 	if buildpackCacheURI != "" {
-		tmpDir := util.MustGetEnv(eirinistaging.EnvBuildpackCacheDir)
-		if err = os.MkdirAll(tmpDir, 0755); err != nil {
-			log.Fatalf("failed to create tmpDir at %s: %s", tmpDir, err)
-		}
-		if err = os.Setenv("TMPDIR", tmpDir); err != nil {
-			log.Fatalf("failed to set TMPDIR as %s: %s", tmpDir, err)
-		}
-
 		buildpackCacheChecksum := util.MustGetEnv(eirinistaging.EnvBuildpackCacheChecksum)
 		checksumVerificationAlgorithm := checksumAlgorithm(util.MustGetEnv(eirinistaging.EnvBuildpackCacheChecksumAlgorithm))
 		buildpackCacheInstaller := eirinistaging.NewPackageManager(downloadClient, buildpackCacheURI, buildpackCacheDir, verifyingReader(checksumVerificationAlgorithm, buildpackCacheChecksum))
