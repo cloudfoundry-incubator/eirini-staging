@@ -4,7 +4,7 @@ type Release struct {
 	DefaultProcessTypes ProcessTypes `yaml:"default_process_types"`
 }
 
-// StagingInfo is used for export/import droplets
+// StagingInfo is used for export/import droplets.
 type StagingInfo struct {
 	DetectedBuildpack string `json:"detected_buildpack" yaml:"detected_buildpack"`
 	StartCommand      string `json:"start_command" yaml:"start_command"`

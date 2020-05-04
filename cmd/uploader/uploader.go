@@ -28,7 +28,7 @@ func main() {
 	client, err := createUploaderHTTPClient(certPath)
 	if err != nil {
 		responder.RespondWithFailure(err)
-		os.Exit(1) // nolint:gomnd
+		os.Exit(1)
 	}
 
 	uploadClient := eirinistaging.DropletUploader{

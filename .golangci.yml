@@ -23,6 +23,7 @@ linters:
   disable:
     - funlen
     - wsl
+    - goerr113
 
 issues:
   exclude-use-default: true

@@ -247,7 +247,7 @@ func (runner *Runner) buildpackPath(buildpack string) (string, error) {
 		return "", errors.Wrapf(err, "Failed to read buildpack directory '%s' for buildpack '%s'", buildpackPath, buildpack)
 	}
 
-	if len(files) == 1 { // nolint:gomnd
+	if len(files) == 1 {
 		nestedPath := filepath.Join(buildpackPath, files[0].Name())
 
 		if runner.pathHasBinDirectory(nestedPath) {
