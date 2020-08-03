@@ -279,7 +279,6 @@ func fileExists(file string) (bool, error) {
 		}
 
 		return false, err
-
 	}
 
 	return true, nil
@@ -386,7 +385,6 @@ func (runner *Runner) handleNoFinalize(buildpackPath, cacheDir, depsIdx string) 
 		logError(fmt.Sprintf("compile script failed %s", err.Error()))
 
 		return NewCompileFailError(errors.Wrap(err, "failed to compile droplet"))
-
 	}
 
 	return nil
