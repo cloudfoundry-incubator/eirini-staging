@@ -34,6 +34,7 @@ func (e DescriptiveError) Error() string {
 	if e.InnerError == nil {
 		return fmt.Sprintf("%s: exit status %d", e.Message, e.ExitCode)
 	}
+
 	return fmt.Sprintf("%s: exit status %d - internal error: %s", e.Message, e.ExitCode, e.InnerError.Error())
 }
 

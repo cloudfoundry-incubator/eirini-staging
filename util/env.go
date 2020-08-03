@@ -10,6 +10,7 @@ func GetEnvOrDefault(envVarName, defaultValue string) string {
 	if !ok {
 		return defaultValue
 	}
+
 	return value
 }
 
@@ -19,5 +20,6 @@ func MustGetEnv(envVarName string) string {
 		return value
 	}
 	log.Fatalf("environment variable %q is not set", envVarName)
+
 	return ""
 }

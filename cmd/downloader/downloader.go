@@ -80,6 +80,7 @@ func untarCache(buildpackCacheDir string) error {
 	cmd.Dir = buildpackCacheDir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+
 	return cmd.Run()
 }
 
@@ -105,5 +106,6 @@ func checksumAlgorithm(algorithm string) hash.Hash {
 	}
 
 	log.Fatalf("unsupported checksum verification algorithm: %q", algorithm)
+
 	return nil
 }

@@ -45,6 +45,7 @@ func OpenBuildpackURL(buildpackURL string, client *http.Client) ([]byte, error) 
 
 func NewBuildpackManager(internalClient *http.Client, defaultClient *http.Client, buildpackDir, buildpacksJSON string) Installer {
 	var tenGB int64 = 10 * 1024 * 1024 * 1024
+
 	return &BuildpackManager{
 		internalClient: internalClient,
 		defaultClient:  defaultClient,
@@ -60,6 +61,7 @@ func (b *BuildpackManager) Install() error {
 	err := json.Unmarshal([]byte(b.buildpacksJSON), &buildpacks)
 	if err != nil {
 		fmt.Printf("Error unmarshaling environment variable %s: %s\n", b.buildpacksJSON, err.Error())
+
 		return err
 	}
 

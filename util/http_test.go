@@ -18,6 +18,7 @@ func extractSubject(key, cert string) []byte {
 	Expect(err).NotTo(HaveOccurred())
 	c, err := x509.ParseCertificate(p.Certificate[0])
 	Expect(err).NotTo(HaveOccurred())
+
 	return c.RawSubject
 }
 

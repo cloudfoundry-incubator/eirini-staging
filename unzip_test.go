@@ -54,6 +54,7 @@ var _ = Describe("Unzip function", func() {
 
 		getRoot := func(path string) string {
 			pathParts := strings.Split(path, "/")
+
 			return pathParts[0]
 		}
 

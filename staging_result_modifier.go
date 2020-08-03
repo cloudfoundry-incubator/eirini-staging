@@ -60,6 +60,7 @@ func (m *BuildpacksKeyModifier) modifyBuildpackMetadata(b builder.BuildpackMetad
 		return builder.BuildpackMetadata{}, err
 	}
 	b.Key = key
+
 	return b, nil
 }
 

@@ -206,6 +206,7 @@ func currentBranch(gitDir string) string {
 		bytes, err = cmd.Output()
 	}
 	Expect(err).NotTo(HaveOccurred())
+
 	return strings.TrimSpace(string(bytes))
 }
 

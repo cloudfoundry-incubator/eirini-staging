@@ -124,6 +124,7 @@ func (r Responder) getStagingResult(path string) (builder.StagingResult, error) 
 	if err != nil {
 		return builder.StagingResult{}, err
 	}
+
 	return stagingResult, nil
 }
 
@@ -153,6 +154,7 @@ func (r Responder) sendCompleteResponse(response *models.TaskCallbackResponse) e
 		if err == nil {
 			message = string(body)
 		}
+
 		return fmt.Errorf("request not successful: status=%d taskGuid=%s %s", resp.StatusCode, response.TaskGuid, message)
 	}
 

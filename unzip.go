@@ -31,6 +31,7 @@ func (u *Unzipper) Extract(src, targetDir string) error {
 			if err = os.MkdirAll(destPath, file.Mode()); err != nil {
 				return err
 			}
+
 			continue
 		}
 

@@ -44,6 +44,7 @@ func (d *PackageInstaller) Install() error {
 
 	downloadPath := filepath.Join(d.downloadDir, AppBits)
 	err := d.download(d.downloadURL, downloadPath)
+
 	return errors.Wrap(err, "download from "+d.downloadURL)
 }
 

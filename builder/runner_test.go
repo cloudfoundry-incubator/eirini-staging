@@ -115,6 +115,7 @@ var _ = Describe("Building", func() {
 		Expect(json.Unmarshal(result, &stagingResult)).To(Succeed())
 		bytes, err := json.Marshal(stagingResult.LifecycleMetadata.Buildpacks)
 		Expect(err).ToNot(HaveOccurred())
+
 		return bytes
 	}
 

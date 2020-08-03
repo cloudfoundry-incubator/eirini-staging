@@ -101,6 +101,7 @@ var _ = Describe("Staging Test", func() {
 	myBuildpackWithSkipDetect := func() builder.Buildpack {
 		mybp := myBuildpack()
 		mybp.SkipDetect = true
+
 		return mybp
 	}
 
@@ -905,6 +906,7 @@ func chownR(path, username, group string) error {
 		if err == nil {
 			err = os.Chown(name, uid, gid)
 		}
+
 		return err
 	})
 }
@@ -939,12 +941,14 @@ func sha256ForBytes(b []byte) string {
 	checksum := sha256.New()
 	_, err := io.Copy(checksum, bytes.NewReader(b))
 	Expect(err).NotTo(HaveOccurred())
+
 	return fmt.Sprintf("%x", checksum.Sum(nil))
 }
 
 func buildpacksJSON(buildpacks ...builder.Buildpack) string {
 	bytes, err := json.Marshal(buildpacks)
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
+
 	return string(bytes)
 }
 
@@ -953,6 +957,7 @@ func runDownloader() *gexec.Session {
 	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 	EventuallyWithOffset(1, session, 60).Should(gexec.Exit())
+
 	return session
 }
 
@@ -961,6 +966,7 @@ func runExecutor() *gexec.Session {
 	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 	EventuallyWithOffset(1, session, 600).Should(gexec.Exit())
+
 	return session
 }
 
@@ -969,5 +975,6 @@ func runUploader() *gexec.Session {
 	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 	Eventually(session, 10).Should(gexec.Exit())
+
 	return session
 }

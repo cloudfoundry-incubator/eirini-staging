@@ -24,6 +24,7 @@ func (r *VerifyingReader) Read(p []byte) (n int, err error) {
 			return bytesRead, checkSumErr
 		}
 	}
+
 	return bytesRead, err
 }
 

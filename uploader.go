@@ -47,6 +47,7 @@ func (u *DropletUploader) uploadFile(fileLocation, url string) error {
 
 	request.ContentLength = contentLength
 	request.Header.Set("Content-Type", "application/octet-stream")
+
 	return u.do(request)
 }
 
@@ -55,6 +56,7 @@ func fileSize(file *os.File) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	return fileInfo.Size(), nil
 }
 
@@ -68,5 +70,6 @@ func (u *DropletUploader) do(req *http.Request) error {
 	if resp.StatusCode >= http.StatusBadRequest {
 		return fmt.Errorf("Upload failed: Status code %d", resp.StatusCode)
 	}
+
 	return nil
 }
