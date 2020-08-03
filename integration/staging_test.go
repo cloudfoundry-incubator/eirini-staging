@@ -17,18 +17,16 @@ import (
 	"strconv"
 
 	archive_helpers "code.cloudfoundry.org/archiver/extractor/test_helper"
+	"code.cloudfoundry.org/bbs/models"
 	eirinistaging "code.cloudfoundry.org/eirini-staging"
 	"code.cloudfoundry.org/eirini-staging/builder"
 	"code.cloudfoundry.org/eirini-staging/integration/integrationfakes"
-	"code.cloudfoundry.org/urljoiner"
-
-	"code.cloudfoundry.org/bbs/models"
 	"code.cloudfoundry.org/tlsconfig"
-	"github.com/onsi/gomega/gbytes"
-	"github.com/onsi/gomega/gexec"
-
+	"code.cloudfoundry.org/urljoiner"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
+	"github.com/onsi/gomega/gexec"
 	"github.com/onsi/gomega/ghttp"
 )
 

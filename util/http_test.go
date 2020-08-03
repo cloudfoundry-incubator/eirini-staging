@@ -9,7 +9,6 @@ import (
 	"runtime"
 
 	"code.cloudfoundry.org/eirini-staging/util"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

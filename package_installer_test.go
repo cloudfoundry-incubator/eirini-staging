@@ -9,7 +9,6 @@ import (
 
 	. "code.cloudfoundry.org/eirini-staging"
 	eirinistagingfakes "code.cloudfoundry.org/eirini-staging/eirini-stagingfakes"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"

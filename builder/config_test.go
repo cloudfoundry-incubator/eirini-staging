@@ -1,10 +1,9 @@
 package builder_test
 
 import (
+	"code.cloudfoundry.org/eirini-staging/builder"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"code.cloudfoundry.org/eirini-staging/builder"
 )
 
 var _ = Describe("Config", func() {

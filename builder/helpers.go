@@ -1,7 +1,9 @@
 package builder
 
 import (
-	"crypto/md5" // #nosec G501
+
+	//  #nosec G501
+	"crypto/md5"
 	"fmt"
 	"log"
 	"path/filepath"

@@ -12,12 +12,11 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	eirinistaging "code.cloudfoundry.org/eirini-staging"
+	"code.cloudfoundry.org/eirini-staging/builder"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/ghttp"
-
-	eirinistaging "code.cloudfoundry.org/eirini-staging"
-	"code.cloudfoundry.org/eirini-staging/builder"
 )
 
 var _ = Describe("Buildpackmanager", func() {

@@ -6,10 +6,9 @@ import (
 	"io/ioutil"
 	"strings"
 
+	. "code.cloudfoundry.org/eirini-staging/checksum"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	. "code.cloudfoundry.org/eirini-staging/checksum"
 )
 
 var _ = Describe("Verifying Reader", func() {

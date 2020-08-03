@@ -1,11 +1,10 @@
 package eirinistaging_test
 
 import (
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-
 	. "code.cloudfoundry.org/eirini-staging"
 	"code.cloudfoundry.org/eirini-staging/builder"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("BuildpacksKeyModifier", func() {
