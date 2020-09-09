@@ -18,6 +18,11 @@ const (
 )
 
 func main() {
+	exitCode := 0
+	defer func() {
+		os.Exit(exitCode)
+	}()
+
 	buildpackCfg := os.Getenv(eirinistaging.EnvBuildpacks)
 	buildpacksDir := util.GetEnvOrDefault(eirinistaging.EnvBuildpacksDir, eirinistaging.RecipeBuildPacksDir)
 	outputDropletLocation := util.GetEnvOrDefault(eirinistaging.EnvOutputDropletLocation, eirinistaging.RecipeOutputDropletLocation)
@@ -29,13 +34,18 @@ func main() {
 
 	responder, err := cmd.CreateResponder(certPath)
 	if err != nil {
-		log.Fatal("failed to initialize responder", err)
+		log.Printf("failed to initialize responder: %v", err)
+		exitCode = 1
+
+		return
 	}
 
 	buildDir, err := extract(downloadDir)
 	if err != nil {
 		responder.RespondWithFailure(errors.Wrap(err, ExitReason))
-		os.Exit(1)
+		exitCode = 1
+
+		return
 	}
 	defer os.RemoveAll(buildDir)
 
@@ -49,17 +59,20 @@ func main() {
 	}
 	if err = buildConfig.InitBuildpacks(buildpackCfg); err != nil {
 		responder.RespondWithFailure(errors.Wrap(err, ExitReason))
-		os.Exit(1)
+		exitCode = 1
+
+		return
 	}
 
 	err = execute(&buildConfig)
 	if err != nil {
-		exitCode := builder.SystemFailCode
+		exitCode = builder.SystemFailCode
 		if withExitCode, ok := err.(builder.DescriptiveError); ok {
 			exitCode = withExitCode.ExitCode
 		}
 		responder.RespondWithFailure(errors.Wrap(err, ExitReason))
-		os.Exit(exitCode)
+
+		return
 	}
 }
 
