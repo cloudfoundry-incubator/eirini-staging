@@ -1,7 +1,7 @@
 package eirinistaging
 
 const (
-	//Environment Variable Names.
+	// Environment Variable Names.
 	EnvDownloadURL                     = "DOWNLOAD_URL"
 	EnvBuildpacks                      = "BUILDPACKS"
 	EnvDropletUploadURL                = "DROPLET_UPLOAD_URL"

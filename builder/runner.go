@@ -38,13 +38,13 @@ func NewRunner(config *Config) *Runner {
 }
 
 func (runner *Runner) Run() error {
-	//set up the world
+	// set up the world
 	err := runner.makeDirectories()
 	if err != nil {
 		return errors.Wrap(err, "Failed to set up filesystem when generating droplet")
 	}
 
-	//detect, compile, release
+	// detect, compile, release
 	log.Println("Cleaning cache dir")
 	err = runner.cleanCacheDir()
 	if err != nil {
