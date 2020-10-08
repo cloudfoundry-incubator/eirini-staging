@@ -1,4 +1,4 @@
-ARG baseimage=cloudfoundry/cflinuxfs3
+ARG baseimage=eirini/eirinifs:test
 
 FROM golang:1.13-buster as builder
 WORKDIR /go/src/code.cloudfoundry.org/eirini-staging
@@ -10,16 +10,14 @@ RUN if [ -z "$GIT_SHA" ]; then echo "GIT_SHA not set"; exit 1; else : ; fi
 
 FROM ${baseimage}
 
-WORKDIR /workspace
+RUN mkdir -p /home/vcap/workspace /home/vcap/packs
 
-RUN mkdir -p /packs
+WORKDIR /home/vcap/workspace
 
-USER vcap
-
-COPY --from=builder /uploader /packs/
+COPY --from=builder /uploader /home/vcap/packs/
 
 ENTRYPOINT [ \
-  "/packs/uploader" \
+  "/home/vcap/packs/uploader" \
 ]
 
 ARG GIT_SHA
