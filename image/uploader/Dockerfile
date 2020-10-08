@@ -10,11 +10,15 @@ RUN if [ -z "$GIT_SHA" ]; then echo "GIT_SHA not set"; exit 1; else : ; fi
 
 FROM ${baseimage}
 
+ARG user_id=2000
+ARG group_id=2000
+
+RUN mkdir -p /packs /workspace
+RUN chown ${user_id}:${group_id} /packs /workspace
+
 WORKDIR /workspace
 
-RUN mkdir -p /packs
-
-USER vcap
+USER ${user_id}:${group_id}
 
 COPY --from=builder /uploader /packs/
 
