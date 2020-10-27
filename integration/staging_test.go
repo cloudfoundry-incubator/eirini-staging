@@ -33,7 +33,6 @@ import (
 //go:generate counterfeiter net/http.HandlerFunc
 
 var _ = Describe("Staging Test", func() {
-
 	const (
 		stagingGUID        = "staging-guid"
 		completionCallback = ""
@@ -699,7 +698,6 @@ var _ = Describe("Staging Test", func() {
 					Expect(runExecutor().ExitCode()).To(Equal(builder.ReleaseFailCode))
 				})
 			})
-
 		})
 	})
 
@@ -907,7 +905,11 @@ func chownR(path, username, group string) error {
 			err = os.Chown(name, uid, gid)
 		}
 
-		return err
+		if err != nil {
+			return fmt.Errorf("filepath walk error: %w", err)
+		}
+
+		return nil
 	})
 }
 
@@ -915,23 +917,23 @@ func getIds(username, group string) (uid int, gid int, err error) {
 	var g *user.Group
 	g, err = user.LookupGroup(group)
 	if err != nil {
-		return -1, -1, err
+		return -1, -1, fmt.Errorf("failed group lookup: %w", err)
 	}
 
 	var u *user.User
 	u, err = user.Lookup(username)
 	if err != nil {
-		return -1, -1, err
+		return -1, -1, fmt.Errorf("failed user lookup: %w", err)
 	}
 
 	uid, err = strconv.Atoi(u.Uid)
 	if err != nil {
-		return -1, -1, err
+		return -1, -1, fmt.Errorf("failed str to int conversion for uid: %w", err)
 	}
 
 	gid, err = strconv.Atoi(g.Gid)
 	if err != nil {
-		return -1, -1, err
+		return -1, -1, fmt.Errorf("failed str to int conversion for gid: %w", err)
 	}
 
 	return uid, gid, nil

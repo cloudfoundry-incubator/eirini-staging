@@ -31,13 +31,13 @@ func (u *DropletUploader) Upload(
 func (u *DropletUploader) uploadFile(fileLocation, url string) error {
 	sourceFile, err := os.Open(filepath.Clean(fileLocation))
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to open file: %w", err)
 	}
 
 	body := ioutil.NopCloser(sourceFile)
 	request, err := http.NewRequest("POST", url, body)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create http request: %w", err)
 	}
 
 	contentLength, err := fileSize(sourceFile)
@@ -54,7 +54,7 @@ func (u *DropletUploader) uploadFile(fileLocation, url string) error {
 func fileSize(file *os.File) (int64, error) {
 	fileInfo, err := file.Stat()
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("failed to stat file: %w", err)
 	}
 
 	return fileInfo.Size(), nil
@@ -63,7 +63,7 @@ func fileSize(file *os.File) (int64, error) {
 func (u *DropletUploader) do(req *http.Request) error {
 	resp, err := u.Client.Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to make request: %w", err)
 	}
 	defer resp.Body.Close()
 

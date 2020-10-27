@@ -22,7 +22,7 @@ func (s *Config) InitBuildpacks(buildpacksJSON string) error {
 		var buildpacks []Buildpack
 		err := json.Unmarshal([]byte(buildpacksJSON), &buildpacks)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to unmarshal buildpack JSON: %w", err)
 		}
 
 		if len(buildpacks) > 0 {

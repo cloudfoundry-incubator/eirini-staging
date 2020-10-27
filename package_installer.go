@@ -51,7 +51,7 @@ func (d *PackageInstaller) Install() error {
 func (d *PackageInstaller) download(downloadURL string, filepath string) error {
 	file, err := os.Create(filepath)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create file: %w", err)
 	}
 	defer file.Close()
 

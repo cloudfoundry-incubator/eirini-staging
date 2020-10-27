@@ -72,7 +72,7 @@ func main() {
 func untarCache(buildpackCacheDir string) error {
 	tarPath, err := exec.LookPath("tar")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to lookup tar path: %w", err)
 	}
 
 	cacheZip := fmt.Sprintf("%s/app.zip", buildpackCacheDir)

@@ -76,7 +76,7 @@ func (r Responder) createSuccessResponse(outputMetadataLocation string, buildpac
 
 	result, err := json.Marshal(stagingResult)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to marshal staging result: %w", err)
 	}
 
 	annotation := cc_messages.StagingTaskAnnotation{
@@ -85,7 +85,7 @@ func (r Responder) createSuccessResponse(outputMetadataLocation string, buildpac
 
 	annotationJSON, err := json.Marshal(annotation)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to marshal annotation: %w", err)
 	}
 
 	return &models.TaskCallbackResponse{
@@ -122,7 +122,7 @@ func (r Responder) getStagingResult(path string) (builder.StagingResult, error) 
 	var stagingResult builder.StagingResult
 	err = json.Unmarshal(contents, &stagingResult)
 	if err != nil {
-		return builder.StagingResult{}, err
+		return builder.StagingResult{}, fmt.Errorf("failed to unmarshal staging result: %w", err)
 	}
 
 	return stagingResult, nil

@@ -10,7 +10,7 @@ import (
 func GitClone(repo url.URL, destination string) error {
 	gitPath, err := exec.LookPath("git")
 	if err != nil {
-		return err
+		return fmt.Errorf("could not find `git` in path: %w", err)
 	}
 
 	branch := repo.Fragment
@@ -37,7 +37,7 @@ func GitClone(repo url.URL, destination string) error {
 			}, branch)
 
 		if err != nil {
-			return fmt.Errorf("Failed to clone git repository at %s", gitURL)
+			return fmt.Errorf("failed to clone git repository at %s", gitURL)
 		}
 	}
 

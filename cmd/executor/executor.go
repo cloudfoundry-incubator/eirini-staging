@@ -1,6 +1,8 @@
 package main
 
 import (
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -10,7 +12,7 @@ import (
 	"code.cloudfoundry.org/eirini-staging/builder"
 	"code.cloudfoundry.org/eirini-staging/cmd"
 	"code.cloudfoundry.org/eirini-staging/util"
-	"github.com/pkg/errors"
+	exterrors "github.com/pkg/errors"
 )
 
 const (
@@ -42,7 +44,7 @@ func main() {
 
 	buildDir, err := extract(downloadDir)
 	if err != nil {
-		responder.RespondWithFailure(errors.Wrap(err, ExitReason))
+		responder.RespondWithFailure(exterrors.Wrap(err, ExitReason))
 		exitCode = 1
 
 		return
@@ -58,7 +60,7 @@ func main() {
 		BuildArtifactsCache:       cacheDir,
 	}
 	if err = buildConfig.InitBuildpacks(buildpackCfg); err != nil {
-		responder.RespondWithFailure(errors.Wrap(err, ExitReason))
+		responder.RespondWithFailure(exterrors.Wrap(err, ExitReason))
 		exitCode = 1
 
 		return
@@ -67,10 +69,12 @@ func main() {
 	err = execute(&buildConfig)
 	if err != nil {
 		exitCode = builder.SystemFailCode
-		if withExitCode, ok := err.(builder.DescriptiveError); ok {
+		var withExitCode builder.DescriptiveError
+
+		if errors.As(err, &withExitCode) {
 			exitCode = withExitCode.ExitCode
 		}
-		responder.RespondWithFailure(errors.Wrap(err, ExitReason))
+		responder.RespondWithFailure(exterrors.Wrap(err, ExitReason))
 
 		return
 	}
@@ -88,13 +92,13 @@ func extract(downloadDir string) (string, error) {
 	extractor := &eirinistaging.Unzipper{UnzippedSizeLimit: tenGB}
 	buildDir, err := ioutil.TempDir("", "app-bits")
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to create temp dir: %w", err)
 	}
 
 	err = extractor.Extract(filepath.Join(downloadDir, eirinistaging.AppBits), buildDir)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("extraction failed: %w", err)
 	}
 
-	return buildDir, err
+	return buildDir, nil
 }

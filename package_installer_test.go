@@ -3,6 +3,7 @@ package eirinistaging_test
 import (
 	"archive/zip"
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -150,7 +151,7 @@ func makeZippedPackage() ([]byte, error) {
 
 	err := w.Close()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to close zip writer: %w", err)
 	}
 
 	return buf.Bytes(), nil

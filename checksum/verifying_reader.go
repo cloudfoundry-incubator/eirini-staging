@@ -19,13 +19,19 @@ func NewVerifyingReader(reader io.Reader, hash hash.Hash, checkSum string) *Veri
 
 func (r *VerifyingReader) Read(p []byte) (n int, err error) {
 	bytesRead, err := r.reader.Read(p)
-	if err == io.EOF {
+	if errors.Is(err, io.EOF) {
 		if checkSumErr := r.verifyChecksum(fmt.Sprintf("%x", r.hash.Sum(nil))); checkSumErr != nil {
 			return bytesRead, checkSumErr
 		}
+
+		return bytesRead, io.EOF
 	}
 
-	return bytesRead, err
+	if err != nil {
+		return bytesRead, fmt.Errorf("reader-error: %w", err)
+	}
+
+	return bytesRead, nil
 }
 
 func (r *VerifyingReader) verifyChecksum(actualCheckSum string) error {

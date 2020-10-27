@@ -172,40 +172,40 @@ func (runner *Runner) buildpacksMetadata(buildpacks []string) []BuildpackMetadat
 
 func (runner *Runner) makeDirectories() error {
 	if err := os.MkdirAll(filepath.Dir(runner.config.OutputDropletLocation), 0755); err != nil {
-		return err
+		return fmt.Errorf("failed to create output droplet location directory: %w", err)
 	}
 
 	if err := os.MkdirAll(filepath.Dir(runner.config.OutputMetadataLocation), 0755); err != nil {
-		return err
+		return fmt.Errorf("failed to create output metadata location directory: %w", err)
 	}
 
 	if err := os.MkdirAll(filepath.Join(runner.config.BuildArtifactsCacheDir(), "final"), 0755); err != nil {
-		return err
+		return fmt.Errorf("failed to create build artifacts cache directory: %w", err)
 	}
 
 	for _, buildpack := range runner.config.SupplyBuildpacks() {
 		if err := os.MkdirAll(runner.supplyCachePath(buildpack), 0755); err != nil {
-			return err
+			return fmt.Errorf("failed to create supply cache directory: %w", err)
 		}
 	}
 
 	var err error
 	runner.contentsDir, err = ioutil.TempDir("", "contents")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create temp dir: %w", err)
 	}
 
 	runner.depsDir = filepath.Join(runner.contentsDir, "deps")
 
 	for i := 0; i <= len(runner.config.SupplyBuildpacks()); i++ {
 		if err := os.MkdirAll(filepath.Join(runner.depsDir, runner.config.DepsIndex(i)), 0755); err != nil {
-			return err
+			return fmt.Errorf("failed to create deps dir: %w", err)
 		}
 	}
 
 	runner.profileDir = filepath.Join(runner.contentsDir, "profile.d")
 	if err := os.MkdirAll(runner.profileDir, 0755); err != nil {
-		return err
+		return fmt.Errorf("failed to create profile dir: %w", err)
 	}
 
 	return nil
@@ -222,7 +222,7 @@ func (runner *Runner) cleanCacheDir() error {
 
 	dirs, err := ioutil.ReadDir(runner.config.BuildArtifactsCacheDir())
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create artifacts cache dir: %w", err)
 	}
 
 	for _, dirInfo := range dirs {
@@ -230,7 +230,7 @@ func (runner *Runner) cleanCacheDir() error {
 		if !neededCacheDirs[dir] {
 			err = os.RemoveAll(dir)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to remove build artifacts cache dir: %w", err)
 			}
 		}
 	}
@@ -278,7 +278,7 @@ func fileExists(file string) (bool, error) {
 			return false, nil
 		}
 
-		return false, err
+		return false, fmt.Errorf("error stat'ing file: %w", err)
 	}
 
 	return true, nil
@@ -445,7 +445,7 @@ func (runner *Runner) readProcfile() (map[string]string, error) {
 			return processes, nil
 		}
 
-		return processes, err
+		return processes, fmt.Errorf("error reading Procfile: %w", err)
 	}
 
 	err = yaml.Unmarshal(procFile, &processes)
@@ -501,7 +501,7 @@ func (runner *Runner) saveInfo(buildpacks []BuildpackMetadata, releaseInfo Relea
 
 	resultFile, err := os.Create(runner.config.OutputMetadataLocation)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create output metadata location: %w", err)
 	}
 	defer resultFile.Close()
 
@@ -550,7 +550,7 @@ func (runner *Runner) warnIfDetectNotExecutable(buildpackPath string) error {
 func (runner *Runner) findTar() (string, error) {
 	tarPath, err := exec.LookPath("tar")
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to find `tar` in the path: %w", err)
 	}
 
 	return tarPath, nil
@@ -560,7 +560,7 @@ func (runner *Runner) writeStagingInfoYML(startCommand string, buildpacks []Buil
 	stagingInfoYML := filepath.Join(runner.contentsDir, "staging_info.yml")
 	stagingInfoFile, err := os.Create(stagingInfoYML)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create	staging_info.yml: %w", err)
 	}
 	defer stagingInfoFile.Close()
 

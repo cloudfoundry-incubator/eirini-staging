@@ -20,7 +20,6 @@ import (
 )
 
 var _ = Describe("Buildpackmanager", func() {
-
 	var (
 		client           *http.Client
 		buildpackDir     string
@@ -52,7 +51,6 @@ var _ = Describe("Buildpackmanager", func() {
 				ghttp.RespondWith(http.StatusOK, responseContent),
 			),
 		)
-
 	})
 
 	JustBeforeEach(func() {
@@ -201,7 +199,7 @@ var _ = Describe("Buildpackmanager", func() {
 
 		It("should try http client and also git clone", func() {
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(MatchError(ContainSubstring("Failed to clone git repository")))
+			Expect(err).To(MatchError(ContainSubstring("failed to clone git repository")))
 		})
 	})
 
@@ -257,7 +255,6 @@ var _ = Describe("Buildpackmanager", func() {
 			execute(gitBuildpackDir, gitPath, "update-server-info")
 
 			httpServer = httptest.NewServer(http.FileServer(http.Dir(tmpDir)))
-
 		})
 
 		AfterEach(func() {

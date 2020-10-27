@@ -3,6 +3,7 @@ package builder_test
 import (
 	"crypto/md5"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -20,7 +21,6 @@ import (
 )
 
 var _ = Describe("Building", func() {
-
 	var (
 		tmpDir                    string
 		buildDir                  string
@@ -99,7 +99,6 @@ var _ = Describe("Building", func() {
 		runner.BuildpackOut = GinkgoWriter
 		runner.BuildpackErr = GinkgoWriter
 		userFacingError = runner.Run()
-
 	})
 
 	resultJSON := func() []byte {
@@ -166,7 +165,6 @@ var _ = Describe("Building", func() {
 
 					Expect(data.LifeCycle.Key).To(Equal("also-always-detects"))
 				})
-
 			})
 
 			Describe("the contents of the output tgz", func() {
@@ -255,7 +253,6 @@ var _ = Describe("Building", func() {
 						expectedYAML := `{"detected_buildpack":"Always Matching","start_command":"procfile-provided start-command"}`
 						Expect(string(stagingInfo)).To(MatchJSON(expectedYAML))
 					})
-
 				})
 
 				Context("when the app does not have a Procfile", func() {
@@ -549,7 +546,6 @@ var _ = Describe("Building", func() {
 	})
 
 	Context("with a buildpack that determines a start web-command", func() {
-
 		BeforeEach(func() {
 			buildpackOrder = "always-detects"
 			cpBuildpack("always-detects")
@@ -591,7 +587,6 @@ var _ = Describe("Building", func() {
 				})
 
 				It("merges the Procfile but uses the buildpack for execution_metadata", func() {
-
 					Expect(resultJSON()).To(MatchJSON(`{
 						"process_types":{"spider":"bogus command", "web":"the start command"},
 						"lifecycle_type": "buildpack",
@@ -635,7 +630,6 @@ var _ = Describe("Building", func() {
 	})
 
 	Context("with a buildpack that determines a start non-web-command", func() {
-
 		BeforeEach(func() {
 			buildpackOrder = "always-detects-non-web"
 			cpBuildpack("always-detects-non-web")
@@ -749,7 +743,7 @@ var _ = Describe("Building", func() {
 
 		It("should exit with an error", func() {
 			Expect(userFacingError).To(MatchError(ContainSubstring("None of the buildpacks detected a compatible application")))
-			Expect(userFacingError.(builder.DescriptiveError).ExitCode).To(Equal(222))
+			Expect(getDescriptiveErrorExitCode(userFacingError)).To(Equal(222))
 		})
 	})
 
@@ -763,7 +757,7 @@ var _ = Describe("Building", func() {
 
 		It("should exit with an error", func() {
 			Expect(userFacingError).To(MatchError(ContainSubstring("failed to compile droplet")))
-			Expect(userFacingError.(builder.DescriptiveError).ExitCode).To(Equal(223))
+			Expect(getDescriptiveErrorExitCode(userFacingError)).To(Equal(223))
 		})
 
 		It("should log the error", func() {
@@ -783,7 +777,7 @@ var _ = Describe("Building", func() {
 
 		It("should exit with an error", func() {
 			Expect(userFacingError).To(MatchError(ContainSubstring("Failed to run all supply scripts")))
-			Expect(userFacingError.(builder.DescriptiveError).ExitCode).To(Equal(225))
+			Expect(getDescriptiveErrorExitCode(userFacingError)).To(Equal(225))
 		})
 
 		It("should log the error", func() {
@@ -803,7 +797,7 @@ var _ = Describe("Building", func() {
 
 		It("should exit with a clear error", func() {
 			Expect(userFacingError).To(MatchError(ContainSubstring("Error: one of the buildpacks chosen to supply dependencies does not support multi-buildpack apps")))
-			Expect(userFacingError.(builder.DescriptiveError).ExitCode).To(Equal(225))
+			Expect(getDescriptiveErrorExitCode(userFacingError)).To(Equal(225))
 		})
 
 		It("should log the error", func() {
@@ -860,7 +854,7 @@ var _ = Describe("Building", func() {
 
 		It("should exit with an error", func() {
 			Expect(userFacingError).To(MatchError(ContainSubstring("buildpack's release output invalid")))
-			Expect(userFacingError.(builder.DescriptiveError).ExitCode).To(Equal(224))
+			Expect(getDescriptiveErrorExitCode(userFacingError)).To(Equal(224))
 		})
 	})
 
@@ -874,7 +868,7 @@ var _ = Describe("Building", func() {
 
 		It("should exit with an error", func() {
 			Expect(userFacingError).To(MatchError(ContainSubstring("Failed to build droplet release")))
-			Expect(userFacingError.(builder.DescriptiveError).ExitCode).To(Equal(224))
+			Expect(getDescriptiveErrorExitCode(userFacingError)).To(Equal(224))
 		})
 	})
 
@@ -915,4 +909,11 @@ func cp(src string, dst string) {
 	)
 	Expect(err).NotTo(HaveOccurred())
 	Eventually(session).Should(gexec.Exit(0))
+}
+
+func getDescriptiveErrorExitCode(userFacingError error) int {
+	descriptiveError := builder.DescriptiveError{}
+	Expect(errors.As(userFacingError, &descriptiveError)).To(BeTrue())
+
+	return descriptiveError.ExitCode
 }

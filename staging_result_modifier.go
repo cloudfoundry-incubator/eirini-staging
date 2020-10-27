@@ -68,7 +68,7 @@ func (m *BuildpacksKeyModifier) getProvidedBuildpacks() ([]cc_messages.Buildpack
 	var providedBuildpacks []cc_messages.Buildpack
 	err := json.Unmarshal([]byte(m.CCBuildpacksJSON), &providedBuildpacks)
 	if err != nil {
-		return []cc_messages.Buildpack{}, err
+		return []cc_messages.Buildpack{}, fmt.Errorf("failed to unmarshal buildpacks JSON: %w", err)
 	}
 
 	return providedBuildpacks, nil

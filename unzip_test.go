@@ -12,7 +12,6 @@ import (
 )
 
 var _ = Describe("Unzip function", func() {
-
 	var (
 		targetDir      string
 		srcZip         string
@@ -39,7 +38,6 @@ var _ = Describe("Unzip function", func() {
 	})
 
 	Context("Unzip succeeds", func() {
-
 		fileContents := map[string]string{
 			"file1":                       "this is the content of test file 1",
 			"innerDir/file2":              "this is the content of test file 2",
@@ -110,7 +108,6 @@ var _ = Describe("Unzip function", func() {
 		}
 
 		Context("When target directory is current working directory", func() {
-
 			BeforeEach(func() {
 				srcZip = "testdata/unzip_me.zip"
 			})
@@ -146,9 +143,7 @@ var _ = Describe("Unzip function", func() {
 	})
 
 	Context("Unzip fails", func() {
-
 		Context("When target directory is not specified", func() {
-
 			BeforeEach(func() {
 				targetDir = ""
 				srcZip = "testdata/unzip_me.zip"
@@ -160,7 +155,6 @@ var _ = Describe("Unzip function", func() {
 		})
 
 		Context("When target dir is not a directory", func() {
-
 			BeforeEach(func() {
 				targetDir = "testdata/unzip_me.zip"
 				srcZip = "testdata/unzip_me.zip"
@@ -169,11 +163,9 @@ var _ = Describe("Unzip function", func() {
 			It("should fail", func() {
 				Expect(err).To(HaveOccurred())
 			})
-
 		})
 
 		Context("When source zip archive does not exist", func() {
-
 			BeforeEach(func() {
 				srcZip = "non-existent"
 			})
@@ -181,11 +173,9 @@ var _ = Describe("Unzip function", func() {
 			It("should fail", func() {
 				Expect(err).To(HaveOccurred())
 			})
-
 		})
 
 		Context("When source is not a zip archive", func() {
-
 			BeforeEach(func() {
 				srcZip = "testdata/file.notzip"
 			})
@@ -193,7 +183,6 @@ var _ = Describe("Unzip function", func() {
 			It("should fail", func() {
 				Expect(err).To(HaveOccurred())
 			})
-
 		})
 
 		Context("when the zip file extracts to more than the limit", func() {
@@ -207,5 +196,4 @@ var _ = Describe("Unzip function", func() {
 			})
 		})
 	})
-
 })

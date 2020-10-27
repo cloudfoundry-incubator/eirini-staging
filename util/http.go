@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"net/http"
 
 	"code.cloudfoundry.org/tlsconfig"
@@ -23,7 +24,7 @@ func CreateTLSHTTPClient(certPaths []CertPaths) (*http.Client, error) {
 	clientOption := tlsconfig.WithAuthorityBuilder(poolBuilder)
 	tlsConfig, err := tlsconfig.Build(tlsOpts...).Client(clientOption)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to build tlsconfig: %w", err)
 	}
 
 	return &http.Client{Transport: &http.Transport{TLSClientConfig: tlsConfig}}, nil
